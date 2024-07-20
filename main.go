@@ -1,21 +1,36 @@
 package main
 
 import (
-	"notes/files"
+	"github.com/sarge424/notes/files"
 
 	g "github.com/AllenDang/giu"
 )
 
 var (
-	homeDir               = "C:/Users/arjun/Desktop/vault/"
-	sidebarHeader         = "Files"
-	editorTitle           = "File.md"
-	taskbarTitle          = "Tasks"
-	editorContent         = "Hellooo"
-	sidebarWidth  float32 = 300
-	editorWidth   float32 = 1000
-	filenames     []string
+	homeDir = "C:/Users/arjun/Desktop/vault/"
+
+	sidebarTitle = "Files"
+	taskbarTitle = "Tasks"
+
+	editorTitle   = "File.md"
+	editorContent = "Hellooo"
+
+	searchWord = ""
+	openSearch = false
+
+	sidebarWidth float32 = 300
+	editorWidth  float32 = 1000
+	filenames    []string
 )
+
+func indexOf(s []string, e string) int {
+	for idx, a := range s {
+		if a == e {
+			return idx
+		}
+	}
+	return -1
+}
 
 func openFile(index int) {
 	editorTitle = filenames[index]
@@ -29,7 +44,7 @@ func saveFile() {
 func loop() {
 	// sidebar
 	sidebarLayout := g.Layout{
-		g.Style().SetDisabled(true).To(g.InputText(&sidebarHeader).Size(g.Auto)),
+		g.Style().SetDisabled(true).To(g.InputText(&sidebarTitle).Size(g.Auto)),
 	}
 
 	for ix, name := range filenames {
@@ -58,10 +73,39 @@ func loop() {
 				g.Layout{
 					g.Style().SetDisabled(true).To(g.InputText(&editorTitle).Size(g.Auto)),
 
+					g.Custom(func() {
+						g.SetKeyboardFocusHere()
+					}),
 					editorPane,
 				},
 
 				taskbarLayout,
+			),
+		),
+
+		g.Custom(func() {
+			if openSearch {
+				g.OpenPopup("Filesearch")
+			}
+		}),
+
+		g.PopupModal("Filesearch").Flags(g.WindowFlagsNoDecoration).Layout(
+			g.Row(
+				g.Label("Open File:"),
+				g.Custom(func() {
+					g.SetKeyboardFocusHere()
+				}),
+				g.InputText(&searchWord).
+					AutoComplete(filenames).
+					Hint("File to Open").
+					Size(300).
+					OnChange(func() {
+						if idx := indexOf(filenames, searchWord); idx >= 0 {
+							g.CloseCurrentPopup()
+							openSearch = false
+							openFile(idx)
+						}
+					}),
 			),
 		),
 	)
@@ -82,11 +126,19 @@ func main() {
 	openFile(0)
 
 	wnd := g.NewMasterWindow("Notes", 400, 200, g.MasterWindowFlagsMaximized)
-	wnd.RegisterKeyboardShortcuts(g.WindowShortcut{
-		Key:      g.KeyTab,
-		Modifier: g.ModNone,
-		Callback: addTab,
-	})
+	wnd.RegisterKeyboardShortcuts(
+		g.WindowShortcut{
+			Key:      g.KeyTab,
+			Modifier: g.ModNone,
+			Callback: addTab,
+		},
+		g.WindowShortcut{
+			Key:      g.KeyO,
+			Modifier: g.ModControl,
+			Callback: func() { openSearch = true },
+		},
+	)
+	wnd.SetTargetFPS(60)
 
 	g.Context.FontAtlas.SetDefaultFont("Firacode-regular.ttf", 16)
 

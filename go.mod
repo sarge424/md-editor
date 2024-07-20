@@ -1,4 +1,4 @@
-module notes
+module github.com/sarge424/notes
 
 go 1.22.1
 
