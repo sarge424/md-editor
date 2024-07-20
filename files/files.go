@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 // get the filenames in a directory
@@ -37,7 +38,7 @@ func LoadFile(path string) string {
 
 	b, err := io.ReadAll(file)
 
-	return string(b)
+	return FText2E(string(b))
 }
 
 func SaveFile(path string, text string) {
@@ -47,7 +48,7 @@ func SaveFile(path string, text string) {
 		return
 	}
 
-	_, err = f.WriteString(text)
+	_, err = f.WriteString(EText2F(text))
 	if err != nil {
 		log.Fatal(err)
 		f.Close()
@@ -59,4 +60,14 @@ func SaveFile(path string, text string) {
 		log.Fatal(err)
 		return
 	}
+}
+
+func EText2F(text string) string {
+	// change 4x space to tabs
+	return strings.ReplaceAll(text, "    ", "\t")
+}
+
+func FText2E(text string) string {
+	// change 4x space to tabs
+	return strings.ReplaceAll(text, "\t", "    ")
 }
