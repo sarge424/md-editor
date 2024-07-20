@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/sarge424/notes/files"
 
 	imgui "github.com/AllenDang/cimgui-go"
@@ -15,12 +17,15 @@ var (
 	currentFile   = "File.md"
 	editorTitle   = "File.md"
 	editorContent = "Hellooo"
+	editMode      = true
 
 	searchWord = ""
 	openSearch = false
 
 	sidebarWidth float32 = 300
 	filenames    []string
+
+	bigFont *g.FontInfo
 )
 
 func attemptFileRename() {
@@ -72,19 +77,29 @@ func loop() {
 		sidebarLayout = append(sidebarLayout, s)
 	}
 
-	//editor
-	editorPane := g.InputTextMultiline(&editorContent)
-	editorPane.Size(g.Auto, g.Auto).OnChange(saveFile)
+	var mainPane g.Layout
+
+	//editor / viewer
+	if editMode {
+		editorPane := g.InputTextMultiline(&editorContent)
+		editorPane.Size(g.Auto, g.Auto).OnChange(saveFile)
+		mainPane = append(mainPane, editorPane)
+	} else {
+		for _, line := range strings.Split(editorContent, "\n") {
+			viewPane := g.Label(line)
+			mainPane = append(mainPane, viewPane)
+		}
+	}
 
 	//main flow
 	g.SingleWindow().Layout(
+		g.Label("Title line").Font(bigFont),
 		g.SplitLayout(g.DirectionVertical, &sidebarWidth,
 			sidebarLayout,
 
 			g.Layout{
 				g.InputText(&editorTitle).Size(g.Auto).OnChange(attemptFileRename),
-
-				editorPane,
+				mainPane,
 			},
 		),
 
@@ -120,18 +135,19 @@ func addTab() {
 }
 
 func main() {
-
 	filenames = files.GetFilenames(homeDir)
-
 	openFile(0)
 
 	wnd := g.NewMasterWindow("Notes", 400, 200, g.MasterWindowFlagsMaximized)
 	wnd.RegisterKeyboardShortcuts(
+		//tabs
 		g.WindowShortcut{
 			Key:      g.KeyTab,
 			Modifier: g.ModNone,
 			Callback: addTab,
 		},
+
+		//search modal
 		g.WindowShortcut{
 			Key:      g.KeyO,
 			Modifier: g.ModControl,
@@ -142,6 +158,8 @@ func main() {
 			Modifier: g.ModNone,
 			Callback: closeSearchModal,
 		},
+
+		//sidebar resizing
 		g.WindowShortcut{
 			Key:      g.KeyLeftBracket,
 			Modifier: g.ModControl,
@@ -152,11 +170,21 @@ func main() {
 			Modifier: g.ModControl,
 			Callback: func() { sidebarWidth = max(sidebarWidth+50, 0) },
 		},
+
+		//edit mode
+		g.WindowShortcut{
+			Key:      g.KeyE,
+			Modifier: g.ModControl,
+			Callback: func() { editMode = !editMode },
+		},
 	)
 	wnd.SetTargetFPS(60)
 
+	g.Context.IO().SetNavVisible(false)
+
 	g.Context.IO().SetConfigFlags(imgui.ConfigFlagsNavNoCaptureKeyboard)
-	g.Context.FontAtlas.SetDefaultFont("Firacode-regular.ttf", 16)
+	g.Context.FontAtlas.SetDefaultFont("Firamono-regular.ttf", 16)
+	bigFont = g.Context.FontAtlas.AddFont("Arial.ttf", 24)
 
 	wnd.Run(loop)
 }
