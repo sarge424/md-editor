@@ -1,6 +1,7 @@
 package files
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -60,6 +61,12 @@ func SaveFile(path string, text string) {
 		log.Fatal(err)
 		return
 	}
+}
+
+func RenameFile(oldName string, newName string, path string) bool {
+	err := os.Rename(path+oldName, path+newName)
+	fmt.Println("Renamed", oldName, "to", newName, "status=", err == nil)
+	return err == nil
 }
 
 func EText2F(text string) string {

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/sarge424/notes/files"
 
+	imgui "github.com/AllenDang/cimgui-go"
 	g "github.com/AllenDang/giu"
 )
 
@@ -11,6 +12,7 @@ var (
 
 	sidebarTitle = "Files"
 
+	currentFile   = "File.md"
 	editorTitle   = "File.md"
 	editorContent = "Hellooo"
 
@@ -20,6 +22,14 @@ var (
 	sidebarWidth float32 = 300
 	filenames    []string
 )
+
+func attemptFileRename() {
+	if editorTitle != currentFile {
+		if files.RenameFile(currentFile, editorTitle, homeDir) {
+			currentFile = editorTitle
+		}
+	}
+}
 
 func closeSearchModal() {
 	if idx := indexOf(filenames, searchWord); openSearch && idx >= 0 {
@@ -39,6 +49,7 @@ func indexOf(s []string, e string) int {
 }
 
 func openFile(index int) {
+	currentFile = filenames[index]
 	editorTitle = filenames[index]
 	editorContent = files.LoadFile(homeDir + editorTitle)
 }
@@ -71,11 +82,8 @@ func loop() {
 			sidebarLayout,
 
 			g.Layout{
-				g.Style().SetDisabled(true).To(g.InputText(&editorTitle).Size(g.Auto)),
+				g.InputText(&editorTitle).Size(g.Auto).OnChange(attemptFileRename),
 
-				g.Custom(func() {
-					g.SetKeyboardFocusHere()
-				}),
 				editorPane,
 			},
 		),
@@ -147,6 +155,7 @@ func main() {
 	)
 	wnd.SetTargetFPS(60)
 
+	g.Context.IO().SetConfigFlags(imgui.ConfigFlagsNavNoCaptureKeyboard)
 	g.Context.FontAtlas.SetDefaultFont("Firacode-regular.ttf", 16)
 
 	wnd.Run(loop)
