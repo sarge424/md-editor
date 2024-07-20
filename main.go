@@ -10,7 +10,6 @@ var (
 	homeDir = "C:/Users/arjun/Desktop/vault/"
 
 	sidebarTitle = "Files"
-	taskbarTitle = "Tasks"
 
 	editorTitle   = "File.md"
 	editorContent = "Hellooo"
@@ -19,9 +18,16 @@ var (
 	openSearch = false
 
 	sidebarWidth float32 = 300
-	editorWidth  float32 = 1000
 	filenames    []string
 )
+
+func closeSearchModal() {
+	if idx := indexOf(filenames, searchWord); openSearch && idx >= 0 {
+		openSearch = false
+		openFile(idx)
+		g.CloseCurrentPopup()
+	}
+}
 
 func indexOf(s []string, e string) int {
 	for idx, a := range s {
@@ -55,11 +61,6 @@ func loop() {
 		sidebarLayout = append(sidebarLayout, s)
 	}
 
-	//taskbar
-	taskbarLayout := g.Layout{
-		g.Style().SetDisabled(true).To(g.InputText(&taskbarTitle).Size(g.Auto)),
-	}
-
 	//editor
 	editorPane := g.InputTextMultiline(&editorContent)
 	editorPane.Size(g.Auto, g.Auto).OnChange(saveFile)
@@ -69,22 +70,19 @@ func loop() {
 		g.SplitLayout(g.DirectionVertical, &sidebarWidth,
 			sidebarLayout,
 
-			g.SplitLayout(g.DirectionVertical, &editorWidth,
-				g.Layout{
-					g.Style().SetDisabled(true).To(g.InputText(&editorTitle).Size(g.Auto)),
+			g.Layout{
+				g.Style().SetDisabled(true).To(g.InputText(&editorTitle).Size(g.Auto)),
 
-					g.Custom(func() {
-						g.SetKeyboardFocusHere()
-					}),
-					editorPane,
-				},
-
-				taskbarLayout,
-			),
+				g.Custom(func() {
+					g.SetKeyboardFocusHere()
+				}),
+				editorPane,
+			},
 		),
 
 		g.Custom(func() {
 			if openSearch {
+				searchWord = editorTitle
 				g.OpenPopup("Filesearch")
 			}
 		}),
@@ -99,13 +97,7 @@ func loop() {
 					AutoComplete(filenames).
 					Hint("File to Open").
 					Size(300).
-					OnChange(func() {
-						if idx := indexOf(filenames, searchWord); openSearch && idx >= 0 {
-							openSearch = false
-							openFile(idx)
-							g.CloseCurrentPopup()
-						}
-					}),
+					OnChange(closeSearchModal),
 			),
 		),
 	)
@@ -136,6 +128,21 @@ func main() {
 			Key:      g.KeyO,
 			Modifier: g.ModControl,
 			Callback: func() { openSearch = true },
+		},
+		g.WindowShortcut{
+			Key:      g.KeyEnter,
+			Modifier: g.ModNone,
+			Callback: closeSearchModal,
+		},
+		g.WindowShortcut{
+			Key:      g.KeyLeftBracket,
+			Modifier: g.ModControl,
+			Callback: func() { sidebarWidth = max(sidebarWidth-50, 0) },
+		},
+		g.WindowShortcut{
+			Key:      g.KeyRightBracket,
+			Modifier: g.ModControl,
+			Callback: func() { sidebarWidth = max(sidebarWidth+50, 0) },
 		},
 	)
 	wnd.SetTargetFPS(60)
