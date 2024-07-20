@@ -89,7 +89,7 @@ func loop() {
 			}
 		}),
 
-		g.PopupModal("Filesearch").Flags(g.WindowFlagsNoDecoration).Layout(
+		g.PopupModal("Filesearch").IsOpen(&openSearch).Flags(g.WindowFlagsNoDecoration).Layout(
 			g.Row(
 				g.Label("Open File:"),
 				g.Custom(func() {
@@ -100,10 +100,10 @@ func loop() {
 					Hint("File to Open").
 					Size(300).
 					OnChange(func() {
-						if idx := indexOf(filenames, searchWord); idx >= 0 {
-							g.CloseCurrentPopup()
+						if idx := indexOf(filenames, searchWord); openSearch && idx >= 0 {
 							openSearch = false
 							openFile(idx)
+							g.CloseCurrentPopup()
 						}
 					}),
 			),
