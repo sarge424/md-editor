@@ -181,6 +181,7 @@ func main() {
 	wnd.SetTargetFPS(60)
 
 	g.Context.IO().SetNavVisible(false)
+	g.Context.IO().Ctx().SetCurrentItemFlags(imgui.ItemFlagsNoTabStop)
 
 	g.Context.IO().SetConfigFlags(imgui.ConfigFlagsNavNoCaptureKeyboard)
 	g.Context.FontAtlas.SetDefaultFont("Firamono-regular.ttf", 16)
