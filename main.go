@@ -1,191 +1,67 @@
 package main
 
 import (
-	"strings"
+	"log"
+	"runtime"
+	"time"
 
-	"github.com/sarge424/notes/files"
-
-	imgui "github.com/AllenDang/cimgui-go"
-	g "github.com/AllenDang/giu"
+	"github.com/go-gl/gl/all-core/gl"
+	"github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/nullboundary/glfont"
 )
 
-var (
-	homeDir = "C:/Users/arjun/Desktop/vault/"
+const windowWidth = 1000
+const windowHeight = 600
+const fontPath = "C:/users/arjun/appdata/local/microsoft/windows/fonts/firacode-regular.ttf"
 
-	sidebarTitle = "Files"
-
-	currentFile   = "File.md"
-	editorTitle   = "File.md"
-	editorContent = "Hellooo"
-	editMode      = true
-
-	searchWord = ""
-	openSearch = false
-
-	sidebarWidth float32 = 300
-	filenames    []string
-
-	bigFont *g.FontInfo
-)
-
-func attemptFileRename() {
-	if editorTitle != currentFile {
-		if files.RenameFile(currentFile, editorTitle, homeDir) {
-			currentFile = editorTitle
-		}
-	}
-}
-
-func closeSearchModal() {
-	if idx := indexOf(filenames, searchWord); openSearch && idx >= 0 {
-		openSearch = false
-		openFile(idx)
-		g.CloseCurrentPopup()
-	}
-}
-
-func indexOf(s []string, e string) int {
-	for idx, a := range s {
-		if a == e {
-			return idx
-		}
-	}
-	return -1
-}
-
-func openFile(index int) {
-	currentFile = filenames[index]
-	editorTitle = filenames[index]
-	editorContent = files.LoadFile(homeDir + editorTitle)
-}
-
-func saveFile() {
-	files.SaveFile(homeDir+editorTitle, editorContent)
-}
-
-func loop() {
-	// sidebar
-	sidebarLayout := g.Layout{
-		g.Style().SetDisabled(true).To(g.InputText(&sidebarTitle).Size(g.Auto)),
-	}
-
-	for ix, name := range filenames {
-		s := g.Selectable(name)
-		s.OnClick(func() {
-			openFile(ix)
-		})
-		sidebarLayout = append(sidebarLayout, s)
-	}
-
-	var mainPane g.Layout
-
-	//editor / viewer
-	if editMode {
-		editorPane := g.InputTextMultiline(&editorContent)
-		editorPane.Size(g.Auto, g.Auto).OnChange(saveFile)
-		mainPane = append(mainPane, editorPane)
-	} else {
-		for _, line := range strings.Split(editorContent, "\n") {
-			viewPane := g.Label(line)
-			mainPane = append(mainPane, viewPane)
-		}
-	}
-
-	//main flow
-	g.SingleWindow().Layout(
-		g.Label("Title line").Font(bigFont),
-		g.SplitLayout(g.DirectionVertical, &sidebarWidth,
-			sidebarLayout,
-
-			g.Layout{
-				g.InputText(&editorTitle).Size(g.Auto).OnChange(attemptFileRename),
-				mainPane,
-			},
-		),
-
-		g.Custom(func() {
-			if openSearch {
-				searchWord = editorTitle
-				g.OpenPopup("Filesearch")
-			}
-		}),
-
-		g.PopupModal("Filesearch").IsOpen(&openSearch).Flags(g.WindowFlagsNoDecoration).Layout(
-			g.Row(
-				g.Label("Open File:"),
-				g.Custom(func() {
-					g.SetKeyboardFocusHere()
-				}),
-				g.InputText(&searchWord).
-					AutoComplete(filenames).
-					Hint("File to Open").
-					Size(300).
-					OnChange(closeSearchModal),
-			),
-		),
-	)
-
-	filenames = files.GetFilenames(homeDir)
-}
-
-func addTab() {
-	for range 4 {
-		g.Context.IO().AddInputCharacter(' ')
-	}
+func init() {
+	runtime.LockOSThread()
 }
 
 func main() {
-	filenames = files.GetFilenames(homeDir)
-	openFile(0)
 
-	wnd := g.NewMasterWindow("Notes", 400, 200, g.MasterWindowFlagsMaximized)
-	wnd.RegisterKeyboardShortcuts(
-		//tabs
-		g.WindowShortcut{
-			Key:      g.KeyTab,
-			Modifier: g.ModNone,
-			Callback: addTab,
-		},
+	if err := glfw.Init(); err != nil {
+		log.Fatalln("failed to initialize glfw:", err)
+	}
+	defer glfw.Terminate()
 
-		//search modal
-		g.WindowShortcut{
-			Key:      g.KeyO,
-			Modifier: g.ModControl,
-			Callback: func() { openSearch = true },
-		},
-		g.WindowShortcut{
-			Key:      g.KeyEnter,
-			Modifier: g.ModNone,
-			Callback: closeSearchModal,
-		},
+	glfw.WindowHint(glfw.Resizable, glfw.True)
+	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	glfw.WindowHint(glfw.ContextVersionMinor, 2)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-		//sidebar resizing
-		g.WindowShortcut{
-			Key:      g.KeyLeftBracket,
-			Modifier: g.ModControl,
-			Callback: func() { sidebarWidth = max(sidebarWidth-50, 0) },
-		},
-		g.WindowShortcut{
-			Key:      g.KeyRightBracket,
-			Modifier: g.ModControl,
-			Callback: func() { sidebarWidth = max(sidebarWidth+50, 0) },
-		},
+	window, _ := glfw.CreateWindow(int(windowWidth), int(windowHeight), "notedit", nil, nil)
 
-		//edit mode
-		g.WindowShortcut{
-			Key:      g.KeyE,
-			Modifier: g.ModControl,
-			Callback: func() { editMode = !editMode },
-		},
-	)
-	wnd.SetTargetFPS(60)
+	window.MakeContextCurrent()
+	glfw.SwapInterval(1)
 
-	g.Context.IO().SetNavVisible(false)
-	g.Context.IO().Ctx().SetCurrentItemFlags(imgui.ItemFlagsNoTabStop)
+	if err := gl.Init(); err != nil {
+		panic(err)
+	}
 
-	g.Context.IO().SetConfigFlags(imgui.ConfigFlagsNavNoCaptureKeyboard)
-	g.Context.FontAtlas.SetDefaultFont("Firamono-regular.ttf", 16)
-	bigFont = g.Context.FontAtlas.AddFont("Arial.ttf", 24)
+	//load font (fontfile, font scale, window width, window height
+	font, err := glfont.LoadFont(fontPath, int32(16), windowWidth, windowHeight)
+	if err != nil {
+		log.Panicf("LoadFont: %v", err)
+	}
 
-	wnd.Run(loop)
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+
+	for !window.ShouldClose() {
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		t := time.Now()
+
+		//set color and draw text
+		font.SetColor(1.0, 0.0, 1.0, 1.0)                                                   //r,g,b,a font color
+		font.Printf(0, 16, 1.0, "Lorem ipsum dolor sit amet, consectetur adipiscing elit.") //x,y,scale,string,printf args
+		font.Printf(0, 32, 1.0, t.Format("2006-01-02 15:04:05"))                            //x,y,scale,string,printf args
+
+		window.SwapBuffers()
+		glfw.PollEvents()
+
+	}
 }
