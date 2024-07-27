@@ -3,6 +3,7 @@ package editor
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 
@@ -16,8 +17,14 @@ type Cursor struct {
 	oldX int
 }
 
+type Line struct {
+	Text  string
+	Rows  int
+	AtRow int
+}
+
 type Editor struct {
-	Lines   []string
+	Lines   []Line
 	Pointer Cursor
 	ScrollY int
 }
@@ -59,8 +66,17 @@ func (e *Editor) LoadFile(path string) error {
 
 	scanner := bufio.NewScanner(file)
 	e.Lines = nil
+	rowCount := 0
 	for scanner.Scan() {
-		e.Lines = append(e.Lines, strings.ReplaceAll(scanner.Text(), "\t", "    "))
+		tx := strings.ReplaceAll(scanner.Text(), "\t", "    ")
+		line := Line{
+			Text:  tx,
+			Rows:  int(math.Ceil(float64(len(tx)) / 40)),
+			AtRow: rowCount,
+		}
+
+		e.Lines = append(e.Lines, line)
+		rowCount += line.Rows
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -71,7 +87,7 @@ func (e *Editor) LoadFile(path string) error {
 }
 
 func (e *Editor) MovePointerX(dx int) {
-	e.Pointer.X = clamp(e.Pointer.X+dx, 0, len(e.Lines[e.Pointer.Y]))
+	e.Pointer.X = clamp(e.Pointer.X+dx, 0, len(e.Lines[e.Pointer.Y].Text))
 	e.Pointer.oldX = e.Pointer.X
 }
 
@@ -79,22 +95,26 @@ func (e *Editor) MovePointerY(dy int) {
 	if e.Pointer.Y == 0 && dy < 0 { //first line -> go to SOF
 		e.MovePointerX(-e.Pointer.X)
 	} else if e.Pointer.Y == len(e.Lines)-1 && dy > 0 { // last line -> goto EOF
-		e.MovePointerX(len(e.Lines[e.Pointer.Y]))
+		e.MovePointerX(len(e.Lines[e.Pointer.Y].Text))
 	} else { // regular case
 		e.Pointer.Y = clamp(e.Pointer.Y+dy, 0, len(e.Lines)-1)
 
 		e.Pointer.X = e.Pointer.oldX
-		e.Pointer.X = clamp(e.Pointer.X, 0, len(e.Lines[e.Pointer.Y]))
+		e.Pointer.X = clamp(e.Pointer.X, 0, len(e.Lines[e.Pointer.Y].Text))
 	}
 }
 
 func (e Editor) DrawToCanvas(cv *canvas.Canvas) {
 	cv.SetFillStyle("#44E")
-	cv.FillRect(float64(e.Pointer.X*14), float64((e.Pointer.Y-e.ScrollY)*24), 14, 24)
+	row := e.Lines[e.Pointer.Y].AtRow + e.Pointer.X/40
+	col := e.Pointer.X % 40
+	cv.FillRect(float64(col*14), float64((row-e.ScrollY)*24), 14, 24)
 
 	cv.SetFillStyle("#FFF")
-	for i, line := range e.Lines {
-		i++
-		cv.FillText(line, 0, float64((i-e.ScrollY)*24))
+	for _, line := range e.Lines {
+		for r := range line.Rows {
+			en := min(len(line.Text), (r+1)*40)
+			cv.FillText(line.Text[r*40:en], 0, float64((line.AtRow+r+1-e.ScrollY)*24))
+		}
 	}
 }
