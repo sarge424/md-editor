@@ -1,10 +1,11 @@
 package kb
 
+import "fmt"
+
 type State struct {
 	Ctrl  int
 	Alt   int
 	Shift int
-	Caps  bool
 }
 
 type Shortcut struct {
@@ -14,20 +15,17 @@ type Shortcut struct {
 	Caps  bool
 
 	Code int
-	Key  rune
+	Char rune
 }
 
-func (kb *State) Emit(scancode int, rn rune) (s Shortcut, valid bool) {
-	s = kb.generate()
+type Keystroke rune
+
+func (kb *State) Emit(scancode int, rn rune) Shortcut {
+	s := kb.generate()
 	s.Code = scancode
-	s.Key = rn
+	s.Char = rn
 
-	valid = true
-	if s.Key == 0 && !(scancode == 10 || scancode == 14) {
-		valid = false
-	}
-
-	return s, valid
+	return s
 }
 
 func (kb State) generate() Shortcut {
@@ -35,7 +33,6 @@ func (kb State) generate() Shortcut {
 	s.Ctrl = kb.Ctrl > 0
 	s.Alt = kb.Alt > 0
 	s.Shift = kb.Shift > 0
-	s.Caps = kb.Caps
 
 	return s
 }
@@ -61,15 +58,19 @@ func (s Shortcut) String() string {
 		ans += "CAP "
 	}
 
-	if s.Key == 10 {
+	if s.Char == 10 {
 		ans += "ENTER"
-	} else if s.Key == rune('\t') {
+	} else if s.Char == rune('\t') {
 		ans += "TAB"
 	} else if s.Code == 14 {
 		ans += "BCKSP"
 	} else {
-		ans += string(s.Key)
+		ans += fmt.Sprint(s.Code)
 	}
 
-	return ans
+	return "SC: " + ans
+}
+
+func (k Keystroke) String() string {
+	return "KS: " + string(k)
 }

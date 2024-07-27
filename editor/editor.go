@@ -2,10 +2,8 @@ package editor
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 
-	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas"
 )
 
@@ -17,21 +15,6 @@ type Cursor struct {
 type Editor struct {
 	Lines   []string
 	Pointer Cursor
-}
-
-func (e *Editor) Handle(s kb.Shortcut) {
-	fmt.Println(s)
-	//MOVEMENT
-	switch s.Key {
-	case 'J':
-		e.MovePointer(0, -1)
-	case 'K':
-		e.MovePointer(0, 1)
-	case 'H':
-		e.MovePointer(-1, 0)
-	case 'L':
-		e.MovePointer(1, 0)
-	}
 }
 
 func (e *Editor) LoadFile(path string) error {

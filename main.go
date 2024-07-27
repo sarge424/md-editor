@@ -1,15 +1,13 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/sarge424/notes/editor"
 	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas/glfwcanvas"
 )
-
-type Shortcuter interface {
-	Handle(s kb.Shortcut)
-}
 
 var (
 	font = "C:/windows/fonts/liberationmono-regular.ttf"
@@ -17,12 +15,11 @@ var (
 
 	ed      editor.Editor
 	kbState kb.State
-	curr    Shortcuter
 )
 
 func main() {
 	// Initialize a window
-	win, cv, err := glfwcanvas.CreateWindow(1000, 800, "Canvas Example")
+	win, cv, err := glfwcanvas.CreateWindow(1000, 800, "Noter")
 	win.Window.SetAttrib(glfw.Resizable, 0)
 	if err != nil {
 		panic(err)
@@ -50,12 +47,19 @@ func main() {
 			//alt
 			kbState.Alt++
 		} else {
-			//Not a modifier
-			sc, ok := kbState.Emit(scancode, rn)
-			if ok {
-				curr.Handle(sc)
+			notAlphaNum := rn == 0 || rn == '\n' || rn == '\t'
+			modPressed := kbState.Ctrl > 0 || kbState.Alt > 0
+
+			//create a KS if mods are held or special keys are pressed
+			if notAlphaNum || modPressed {
+				sc := kbState.Emit(scancode, rn)
+				fmt.Println(sc)
 			}
 		}
+	}
+
+	win.KeyChar = func(rn rune) {
+		fmt.Println(kb.Keystroke(rn))
 	}
 
 	win.KeyUp = func(scancode int, rn rune, name string) {
@@ -68,17 +72,11 @@ func main() {
 		} else if scancode == 56 || scancode == 312 {
 			//ALT
 			kbState.Alt--
-		} else if scancode == 58 {
-			//CAPS LOCK
-			kbState.Caps = !kbState.Caps
 		}
 
 		// cap counters at 0
 		kbState.HandleUnderflow()
 	}
-
-	//set current window
-	curr = &ed
 
 	// Main loop
 	win.MainLoop(func() {
