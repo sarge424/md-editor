@@ -22,7 +22,7 @@ var (
 func main() {
 	// Initialize a window
 	win, cv, err := glfwcanvas.CreateWindow(1000, 800, "Noter")
-	win.Window.SetAttrib(glfw.Resizable, 0)
+	win.Window.SetAttrib(glfw.Resizable, 1)
 	if err != nil {
 		panic(err)
 	}

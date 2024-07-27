@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas"
@@ -59,7 +60,7 @@ func (e *Editor) LoadFile(path string) error {
 	scanner := bufio.NewScanner(file)
 	e.Lines = nil
 	for scanner.Scan() {
-		e.Lines = append(e.Lines, scanner.Text())
+		e.Lines = append(e.Lines, strings.ReplaceAll(scanner.Text(), "\t", "    "))
 	}
 
 	if err := scanner.Err(); err != nil {
