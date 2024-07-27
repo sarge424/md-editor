@@ -2,19 +2,46 @@ package editor
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 
+	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas"
 )
 
 type Cursor struct {
-	X int
-	Y int
+	X    int
+	Y    int
+	oldX int
 }
 
 type Editor struct {
 	Lines   []string
 	Pointer Cursor
+}
+
+func clamp(x, minX, maxX int) int {
+	return max(minX, min(x, maxX))
+}
+
+func (e *Editor) HandleKeystroke(ks kb.Keystroke) {
+	//convert letters to uppercase, others remain unchanged
+	let := ks.Std()
+
+	switch let {
+	case 'J':
+		e.MovePointerY(-1)
+	case 'K':
+		e.MovePointerY(1)
+	case 'H':
+		e.MovePointerX(-1)
+	case 'L':
+		e.MovePointerX(1)
+	}
+}
+
+func (e *Editor) HandleShortcut(sc kb.Shortcut) {
+	fmt.Println(sc)
 }
 
 func (e *Editor) LoadFile(path string) error {
@@ -37,9 +64,22 @@ func (e *Editor) LoadFile(path string) error {
 	return nil
 }
 
-func (e *Editor) MovePointer(x, y int) {
-	e.Pointer.X += x
-	e.Pointer.Y += y
+func (e *Editor) MovePointerX(dx int) {
+	e.Pointer.X = clamp(e.Pointer.X+dx, 0, len(e.Lines[e.Pointer.Y]))
+	e.Pointer.oldX = e.Pointer.X
+}
+
+func (e *Editor) MovePointerY(dy int) {
+	if e.Pointer.Y == 0 && dy < 0 { //first line -> go to SOF
+		e.MovePointerX(-e.Pointer.X)
+	} else if e.Pointer.Y == len(e.Lines)-1 && dy > 0 { // last line -> goto EOF
+		e.MovePointerX(len(e.Lines[e.Pointer.Y]))
+	} else { // regular case
+		e.Pointer.Y = clamp(e.Pointer.Y+dy, 0, len(e.Lines)-1)
+
+		e.Pointer.X = e.Pointer.oldX
+		e.Pointer.X = clamp(e.Pointer.X, 0, len(e.Lines[e.Pointer.Y]))
+	}
 }
 
 func (e Editor) DrawToCanvas(cv *canvas.Canvas) {

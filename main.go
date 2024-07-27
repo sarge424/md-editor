@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/sarge424/notes/editor"
 	"github.com/sarge424/notes/kb"
@@ -15,6 +13,7 @@ var (
 
 	ed      editor.Editor
 	kbState kb.State
+	curr    kb.Keyboarder
 )
 
 func main() {
@@ -50,16 +49,17 @@ func main() {
 			notAlphaNum := rn == 0 || rn == '\n' || rn == '\t'
 			modPressed := kbState.Ctrl > 0 || kbState.Alt > 0
 
-			//create a KS if mods are held or special keys are pressed
+			//create a SC if mods are held or special keys are pressed
 			if notAlphaNum || modPressed {
 				sc := kbState.Emit(scancode, rn)
-				fmt.Println(sc)
+				curr.HandleShortcut(sc)
 			}
 		}
 	}
 
 	win.KeyChar = func(rn rune) {
-		fmt.Println(kb.Keystroke(rn))
+		ks := kb.Keystroke(rn)
+		curr.HandleKeystroke(ks)
 	}
 
 	win.KeyUp = func(scancode int, rn rune, name string) {
@@ -77,6 +77,9 @@ func main() {
 		// cap counters at 0
 		kbState.HandleUnderflow()
 	}
+
+	//set context
+	curr = &ed
 
 	// Main loop
 	win.MainLoop(func() {

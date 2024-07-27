@@ -1,6 +1,9 @@
 package kb
 
-import "fmt"
+import (
+	"fmt"
+	"unicode"
+)
 
 type State struct {
 	Ctrl  int
@@ -20,6 +23,11 @@ type Shortcut struct {
 
 type Keystroke rune
 
+type Keyboarder interface {
+	HandleKeystroke(k Keystroke)
+	HandleShortcut(s Shortcut)
+}
+
 func (kb *State) Emit(scancode int, rn rune) Shortcut {
 	s := kb.generate()
 	s.Code = scancode
@@ -35,6 +43,15 @@ func (kb State) generate() Shortcut {
 	s.Shift = kb.Shift > 0
 
 	return s
+}
+
+func (ks Keystroke) Std() rune {
+	r := rune(ks)
+	if unicode.IsLetter(r) {
+		return unicode.ToUpper(r)
+	}
+
+	return r
 }
 
 func (kb *State) HandleUnderflow() {
