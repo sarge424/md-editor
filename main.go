@@ -1,67 +1,44 @@
 package main
 
 import (
-	"log"
-	"runtime"
-	"time"
-
-	"github.com/go-gl/gl/all-core/gl"
-	"github.com/go-gl/glfw/v3.1/glfw"
-	"github.com/nullboundary/glfont"
+	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/sarge424/notes/editor"
+	"github.com/tfriedel6/canvas/glfwcanvas"
 )
 
-const windowWidth = 1000
-const windowHeight = 600
-const fontPath = "C:/users/arjun/appdata/local/microsoft/windows/fonts/firacode-regular.ttf"
-
-func init() {
-	runtime.LockOSThread()
-}
+var (
+	font = "C:/windows/fonts/liberationmono-regular.ttf"
+	home = "C:/users/arjun/Desktop/vault"
+	file = "C:/users/arjun/Desktop/vault/crypto.md"
+)
 
 func main() {
+	// Initialize a window
+	win, cv, err := glfwcanvas.CreateWindow(1000, 800, "Canvas Example")
+	win.Window.SetAttrib(glfw.Resizable, 0)
 
-	if err := glfw.Init(); err != nil {
-		log.Fatalln("failed to initialize glfw:", err)
-	}
-	defer glfw.Terminate()
-
-	glfw.WindowHint(glfw.Resizable, glfw.True)
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 2)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-
-	window, _ := glfw.CreateWindow(int(windowWidth), int(windowHeight), "notedit", nil, nil)
-
-	window.MakeContextCurrent()
-	glfw.SwapInterval(1)
-
-	if err := gl.Init(); err != nil {
+	if err != nil {
 		panic(err)
 	}
 
-	//load font (fontfile, font scale, window width, window height
-	font, err := glfont.LoadFont(fontPath, int32(16), windowWidth, windowHeight)
+	f, err := cv.LoadFont(font)
 	if err != nil {
-		log.Panicf("LoadFont: %v", err)
+		panic("Error loading font")
 	}
 
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
-	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	var ed editor.Editor
+	ed.Pointer = editor.Cursor{X: 5, Y: 7}
+	ed.LoadFile(file)
 
-	for !window.ShouldClose() {
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	// Main loop
+	win.MainLoop(func() {
+		w, h := cv.Size()
+		cv.SetFillStyle("#242424")
+		cv.FillRect(0, 0, float64(w), float64(h))
 
-		t := time.Now()
+		cv.SetFont(f, 24)
+		ed.Draw(cv)
 
-		//set color and draw text
-		font.SetColor(1.0, 0.0, 1.0, 1.0)                                                   //r,g,b,a font color
-		font.Printf(0, 16, 1.0, "Lorem ipsum dolor sit amet, consectetur adipiscing elit.") //x,y,scale,string,printf args
-		font.Printf(0, 32, 1.0, t.Format("2006-01-02 15:04:05"))                            //x,y,scale,string,printf args
+	})
 
-		window.SwapBuffers()
-		glfw.PollEvents()
-
-	}
 }
