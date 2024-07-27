@@ -2,8 +2,10 @@ package editor
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 
+	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas"
 )
 
@@ -15,6 +17,10 @@ type Cursor struct {
 type Editor struct {
 	Lines   []string
 	Pointer Cursor
+}
+
+func (e *Editor) Handle(s kb.Shortcut) {
+	fmt.Println(s)
 }
 
 func (e *Editor) LoadFile(path string) error {
@@ -37,7 +43,7 @@ func (e *Editor) LoadFile(path string) error {
 	return nil
 }
 
-func (e Editor) Draw(cv *canvas.Canvas) {
+func (e Editor) DrawToCanvas(cv *canvas.Canvas) {
 	cv.SetFillStyle("#BBB")
 	cv.FillRect(float64(e.Pointer.X*14), float64(e.Pointer.Y*24), 14, 24)
 
