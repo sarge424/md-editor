@@ -18,6 +18,7 @@ type Cursor struct {
 type Editor struct {
 	Lines   []string
 	Pointer Cursor
+	ScrollY int
 }
 
 func clamp(x, minX, maxX int) int {
@@ -30,13 +31,17 @@ func (e *Editor) HandleKeystroke(ks kb.Keystroke) {
 
 	switch let {
 	case 'J':
-		e.MovePointerY(-1)
-	case 'K':
 		e.MovePointerY(1)
+	case 'K':
+		e.MovePointerY(-1)
 	case 'H':
 		e.MovePointerX(-1)
 	case 'L':
 		e.MovePointerX(1)
+	case ';':
+		e.ScrollY++
+	case '\'':
+		e.ScrollY--
 	}
 }
 
@@ -84,11 +89,11 @@ func (e *Editor) MovePointerY(dy int) {
 
 func (e Editor) DrawToCanvas(cv *canvas.Canvas) {
 	cv.SetFillStyle("#44E")
-	cv.FillRect(float64(e.Pointer.X*14), float64(e.Pointer.Y*24), 14, 24)
+	cv.FillRect(float64(e.Pointer.X*14), float64((e.Pointer.Y-e.ScrollY)*24), 14, 24)
 
 	cv.SetFillStyle("#FFF")
 	for i, line := range e.Lines {
 		i++
-		cv.FillText(line, 0, float64(i*24))
+		cv.FillText(line, 0, float64((i-e.ScrollY)*24))
 	}
 }

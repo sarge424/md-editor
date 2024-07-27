@@ -14,6 +14,9 @@ var (
 	ed      editor.Editor
 	kbState kb.State
 	curr    kb.Keyboarder
+
+	mouseX, mouseY int
+	moused         bool
 )
 
 func main() {
@@ -78,11 +81,36 @@ func main() {
 		kbState.HandleUnderflow()
 	}
 
+	//mouse events
+	win.MouseDown = func(button, x, y int) {
+		if button != 0 {
+			return
+		}
+		mouseX = x
+		mouseY = y
+		moused = true
+	}
+
+	win.MouseMove = func(x, y int) {
+		//move window
+		if moused {
+			wx, wy := win.Window.GetPos()
+			dx := x - mouseX
+			dy := y - mouseY
+			win.Window.SetPos(wx+dx, wy+dy)
+		}
+	}
+
+	win.MouseUp = func(button, x, y int) {
+		moused = false
+	}
+
 	//set context
 	curr = &ed
 
 	// Main loop
 	win.MainLoop(func() {
+
 		w, h := cv.Size()
 		cv.SetFillStyle("#242424")
 		cv.FillRect(0, 0, float64(w), float64(h))
