@@ -21,6 +21,17 @@ type Editor struct {
 
 func (e *Editor) Handle(s kb.Shortcut) {
 	fmt.Println(s)
+	//MOVEMENT
+	switch s.Key {
+	case 'J':
+		e.MovePointer(0, -1)
+	case 'K':
+		e.MovePointer(0, 1)
+	case 'H':
+		e.MovePointer(-1, 0)
+	case 'L':
+		e.MovePointer(1, 0)
+	}
 }
 
 func (e *Editor) LoadFile(path string) error {
@@ -43,8 +54,13 @@ func (e *Editor) LoadFile(path string) error {
 	return nil
 }
 
+func (e *Editor) MovePointer(x, y int) {
+	e.Pointer.X += x
+	e.Pointer.Y += y
+}
+
 func (e Editor) DrawToCanvas(cv *canvas.Canvas) {
-	cv.SetFillStyle("#BBB")
+	cv.SetFillStyle("#44E")
 	cv.FillRect(float64(e.Pointer.X*14), float64(e.Pointer.Y*24), 14, 24)
 
 	cv.SetFillStyle("#FFF")

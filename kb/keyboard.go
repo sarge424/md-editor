@@ -63,6 +63,8 @@ func (s Shortcut) String() string {
 
 	if s.Key == 10 {
 		ans += "ENTER"
+	} else if s.Key == rune('\t') {
+		ans += "TAB"
 	} else if s.Code == 14 {
 		ans += "BCKSP"
 	} else {
