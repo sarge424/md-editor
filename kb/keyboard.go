@@ -85,9 +85,9 @@ func (s Shortcut) String() string {
 		ans += fmt.Sprint(s.Code)
 	}
 
-	return "SC: " + ans
+	return ans
 }
 
 func (k Keystroke) String() string {
-	return "KS: " + string(k)
+	return string(k)
 }

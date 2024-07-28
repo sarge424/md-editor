@@ -10,6 +10,11 @@ import (
 	"github.com/tfriedel6/canvas"
 )
 
+const (
+	NavMode  int = iota
+	EditMode int = iota
+)
+
 type row struct {
 	index  int
 	length int
@@ -22,8 +27,11 @@ type pointer struct {
 }
 
 type Editor struct {
-	text   content
-	rows   []row
+	text content
+	rows []row
+
+	mode int
+
 	scroll int
 	p      pointer
 }
@@ -67,6 +75,11 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 	case 'K':
 		e.MoveY(-1)
 
+	case 'I':
+		if e.mode == NavMode {
+			e.mode = EditMode
+		}
+
 	case ';':
 		e.scroll++
 	case '\'':
@@ -75,7 +88,12 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 }
 
 func (e *Editor) HandleShortcut(k kb.Shortcut) {
-	fmt.Println(k)
+	switch fmt.Sprint(k) {
+	case "1": //ESC
+		if e.mode == EditMode {
+			e.mode = NavMode
+		}
+	}
 }
 
 func (e *Editor) LoadFile(file string) {
@@ -131,7 +149,12 @@ func (e Editor) String() string {
 }
 
 func (e Editor) DrawPointer(cv *canvas.Canvas) {
-	cv.SetFillStyle("#4242FF")
+	switch e.mode {
+	case NavMode:
+		cv.SetFillStyle("#ff4242")
+	case EditMode:
+		cv.SetFillStyle("#4242ff")
+	}
 	cv.FillRect(float64(e.p.x)*14, float64(e.p.y-e.scroll)*24, 14, 24)
 }
 
