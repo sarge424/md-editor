@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/sarge424/notes/editor"
 	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas/glfwcanvas"
 )
@@ -11,7 +10,6 @@ var (
 	font = "C:/windows/fonts/liberationmono-regular.ttf"
 	file = "C:/users/arjun/Desktop/vault/crypto.md"
 
-	ed      editor.Editor
 	kbState kb.State
 	curr    kb.Keyboarder
 
@@ -19,7 +17,7 @@ var (
 	moused         bool
 )
 
-func main() {
+func main2() {
 	// Initialize a window
 	win, cv, err := glfwcanvas.CreateWindow(1000, 800, "Noter")
 	win.Window.SetAttrib(glfw.Resizable, 1)
@@ -32,10 +30,6 @@ func main() {
 	if err != nil {
 		panic("Error loading font")
 	}
-
-	//setup editor
-	ed.Pointer = editor.Cursor{X: 5, Y: 7}
-	ed.LoadFile(file)
 
 	//setup event handling
 	win.KeyDown = func(scancode int, rn rune, name string) {
@@ -106,7 +100,6 @@ func main() {
 	}
 
 	//set context
-	curr = &ed
 
 	// Main loop
 	win.MainLoop(func() {
@@ -116,7 +109,6 @@ func main() {
 		cv.FillRect(0, 0, float64(w), float64(h))
 
 		cv.SetFont(f, 24)
-		ed.DrawToCanvas(cv)
 
 	})
 
