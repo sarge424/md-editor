@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/tfriedel6/canvas"
 )
 
 type row struct {
@@ -77,4 +79,47 @@ func (e Editor) String() string {
 
 func (e Editor) Rows() {
 	fmt.Printf("%#v\n", e.rows)
+}
+
+func (e Editor) Render(cv *canvas.Canvas) {
+	rowNo := 0
+	chunkStart := 0
+	rowBuffer := ""
+
+outer:
+	for _, ch := range e.text.chunks {
+		chunkEnd := chunkStart + len(ch)
+
+		// as long as rows can start in this chunk
+		for e.rows[rowNo].index < chunkEnd {
+			rowEnd := e.rows[rowNo].index + e.rows[rowNo].length
+
+			// the row ends in this chunk
+			st := max(0, e.rows[rowNo].index-chunkStart)
+			if rowEnd <= chunkEnd {
+				rowBuffer += ch[st : rowEnd-chunkStart]
+
+				//cv.FillText(rowBuffer, 0, float64(rowNo+1)*24)
+				fmt.Println("<", rowBuffer, ">")
+
+				rowBuffer = ""
+				rowNo++
+				if rowNo >= len(e.rows) {
+					break outer
+				}
+
+			} else { // the row does not end in this chunk
+				rowBuffer += ch[st:]
+				break
+			}
+		}
+
+		chunkStart = chunkEnd
+	}
+
+	// the file ends in a newline
+	if rowNo < len(e.rows) {
+		//cv.FillText(rowBuffer, 0, float64(rowNo+1)*24)
+		fmt.Println("<", rowBuffer, ">")
+	}
 }
