@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas"
 )
 
@@ -15,14 +16,29 @@ type row struct {
 }
 
 type Editor struct {
-	text content
-	rows []row
+	text   content
+	rows   []row
+	scroll int
 }
 
 func New(chunkSize int) Editor {
 	return Editor{
 		text: newContent(chunkSize),
 	}
+}
+
+func (e *Editor) HandleKeystroke(k kb.Keystroke) {
+	// standardize letters to uppercase
+	switch k.Std() {
+	case ';':
+		e.scroll++
+	case '\'':
+		e.scroll--
+	}
+}
+
+func (e *Editor) HandleShortcut(k kb.Shortcut) {
+	fmt.Println(k)
 }
 
 func (e *Editor) LoadFile(file string) {
@@ -77,10 +93,6 @@ func (e Editor) String() string {
 	return e.text.String()
 }
 
-func (e Editor) Rows() {
-	fmt.Printf("%#v\n", e.rows)
-}
-
 func (e Editor) Render(cv *canvas.Canvas) {
 	rowNo := 0
 	chunkStart := 0
@@ -99,8 +111,8 @@ outer:
 			if rowEnd <= chunkEnd {
 				rowBuffer += ch[st : rowEnd-chunkStart]
 
-				//cv.FillText(rowBuffer, 0, float64(rowNo+1)*24)
-				fmt.Println("<", rowBuffer, ">")
+				cv.FillText(rowBuffer, 0, float64(rowNo-e.scroll+1)*24)
+				//fmt.Println("<", rowBuffer, ">")
 
 				rowBuffer = ""
 				rowNo++
@@ -119,7 +131,7 @@ outer:
 
 	// the file ends in a newline
 	if rowNo < len(e.rows) {
-		//cv.FillText(rowBuffer, 0, float64(rowNo+1)*24)
-		fmt.Println("<", rowBuffer, ">")
+		// fmt.Println("<", rowBuffer, ">")
+		cv.FillText(rowBuffer, 0, float64(rowNo-e.scroll+1)*24)
 	}
 }
