@@ -15,10 +15,17 @@ type row struct {
 	length int
 }
 
+type pointer struct {
+	x    int
+	y    int
+	oldx int
+}
+
 type Editor struct {
 	text   content
 	rows   []row
 	scroll int
+	p      pointer
 }
 
 func New(chunkSize int) Editor {
@@ -27,9 +34,39 @@ func New(chunkSize int) Editor {
 	}
 }
 
+func (e *Editor) MoveX(dx int) {
+	newX := clamp(e.p.x+dx, 0, e.rows[e.p.y].length)
+	if e.p.x != newX {
+		e.p.x = newX
+		e.p.oldx = newX
+	}
+}
+
+func (e *Editor) MoveY(dy int) {
+	newY := clamp(e.p.y+dy, 0, len(e.rows)-1)
+	e.p.y = newY
+
+	if e.p.x > e.rows[e.p.y].length {
+		e.p.x = e.rows[e.p.y].length
+	}
+
+	if e.p.oldx <= e.rows[e.p.y].length {
+		e.p.x = e.p.oldx
+	}
+}
+
 func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 	// standardize letters to uppercase
 	switch k.Std() {
+	case 'H':
+		e.MoveX(-1)
+	case 'L':
+		e.MoveX(1)
+	case 'J':
+		e.MoveY(1)
+	case 'K':
+		e.MoveY(-1)
+
 	case ';':
 		e.scroll++
 	case '\'':
@@ -93,7 +130,15 @@ func (e Editor) String() string {
 	return e.text.String()
 }
 
+func (e Editor) DrawPointer(cv *canvas.Canvas) {
+	cv.SetFillStyle("#4242FF")
+	cv.FillRect(float64(e.p.x)*14, float64(e.p.y-e.scroll)*24, 14, 24)
+}
+
 func (e Editor) Render(cv *canvas.Canvas) {
+	e.DrawPointer(cv)
+
+	cv.SetFillStyle("#FFF")
 	rowNo := 0
 	chunkStart := 0
 	rowBuffer := ""
@@ -134,4 +179,8 @@ outer:
 		// fmt.Println("<", rowBuffer, ">")
 		cv.FillText(rowBuffer, 0, float64(rowNo-e.scroll+1)*24)
 	}
+}
+
+func clamp(x, lo, hi int) int {
+	return min(max(lo, x), hi)
 }
