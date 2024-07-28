@@ -6,13 +6,13 @@ import (
 	"github.com/sarge424/notes/editor"
 )
 
-func main() {
-	tx := editor.NewBody(10)
+var (
+	path = "C:/Users/arjun/Desktop/vault/crypto.md"
+)
 
-	tx.Insert("Hello", 0)
-	tx.Insert("World", 5)
-	tx.Insert("World2", 10)
-	tx.Insert("qwer", 10)
-	//tx.Delete(9, 4)
-	fmt.Println(tx)
+func main() {
+	ed := editor.New(100)
+	ed.LoadFile(path)
+
+	fmt.Println(ed)
 }
