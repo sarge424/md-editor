@@ -65,30 +65,48 @@ func (e *Editor) MoveY(dy int) {
 
 func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 	// standardize letters to uppercase
-	switch k.Std() {
-	case 'H':
-		e.MoveX(-1)
-	case 'L':
-		e.MoveX(1)
-	case 'J':
-		e.MoveY(1)
-	case 'K':
-		e.MoveY(-1)
+	if e.mode == NavMode {
+		switch k.Std() {
+		// movement
+		case 'H':
+			e.MoveX(-1)
+		case 'L':
+			e.MoveX(1)
+		case 'J':
+			e.MoveY(1)
+		case 'K':
+			e.MoveY(-1)
 
-	case 'I':
-		if e.mode == NavMode {
+		// mode switch
+		case 'I':
 			e.mode = EditMode
+
+		// scroll
+		case '[':
+			e.scroll++
+		case ']':
+			e.scroll--
 		}
 
-	case ';':
-		e.scroll++
-	case '\'':
-		e.scroll--
+	} else if e.mode == EditMode {
+		e.InsertText(string(k))
+	}
+}
+
+func (e *Editor) InsertText(text string) {
+	pointerPos := e.rows[e.p.y].index + e.p.x
+	e.text.Insert(text, pointerPos)
+
+	e.p.x += len(text)
+	e.rows[e.p.y].length += len(text)
+	//offset the start of all following rows
+	for i := e.p.y + 1; i < len(e.rows); i++ {
+		e.rows[i].index += len(text)
 	}
 }
 
 func (e *Editor) HandleShortcut(k kb.Shortcut) {
-	switch fmt.Sprint(k) {
+	switch fmt.Sprint(k) { // switch on the string representation
 	case "1": //ESC
 		if e.mode == EditMode {
 			e.mode = NavMode
