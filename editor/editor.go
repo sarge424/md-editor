@@ -93,6 +93,23 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 	}
 }
 
+func (e *Editor) HandleShortcut(k kb.Shortcut) {
+	switch fmt.Sprint(k) { // switch on the string representation
+	case "1": //ESC
+		if e.mode == EditMode {
+			e.mode = NavMode
+		}
+
+	case "BCKSP", "SHF BCKSP":
+		if e.mode == EditMode {
+			e.DeleteText(1)
+		}
+
+	default:
+		fmt.Println(k)
+	}
+}
+
 func (e *Editor) InsertText(text string) {
 	pointerPos := e.rows[e.p.y].index + e.p.x
 	e.text.Insert(text, pointerPos)
@@ -105,13 +122,20 @@ func (e *Editor) InsertText(text string) {
 	}
 }
 
-func (e *Editor) HandleShortcut(k kb.Shortcut) {
-	switch fmt.Sprint(k) { // switch on the string representation
-	case "1": //ESC
-		if e.mode == EditMode {
-			e.mode = NavMode
-		}
+func (e *Editor) DeleteText(length int) {
+	pointerPos := e.rows[e.p.y].index + e.p.x - 1
+	if pointerPos < 0 {
+		return
 	}
+	e.text.Delete(pointerPos, length)
+
+	e.p.x -= length
+	e.rows[e.p.y].length -= length
+	//offset the start of all following rows
+	for i := e.p.y + 1; i < len(e.rows); i++ {
+		e.rows[i].index -= length
+	}
+
 }
 
 func (e *Editor) LoadFile(file string) {
