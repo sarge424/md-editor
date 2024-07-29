@@ -30,7 +30,9 @@ type pointer struct {
 type Editor struct {
 	filename string
 	text     content
-	rows     []row
+
+	rows   []row
+	rowLen int
 
 	mode int
 	p    pointer
@@ -43,6 +45,7 @@ func New(height, chunkSize int) Editor {
 	return Editor{
 		text:   newContent(chunkSize),
 		Height: height,
+		rowLen: 20,
 	}
 }
 
@@ -322,6 +325,7 @@ func (e Editor) Render(cv *canvas.Canvas) {
 
 	e.DrawPointer(cv)
 
+	rowsDrawn := 0
 	rowNo := e.scroll
 	chunkStart := 0
 	rowBuffer := ""
@@ -341,16 +345,23 @@ outer:
 
 				//row numbers
 				cv.SetFillStyle("#888")
-				cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
+				cv.FillText(fmt.Sprintf("%04d", rowsDrawn+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
 
 				// y +1 extra formatting to leave space for border
 				cv.SetFillStyle("#FFF")
-				cv.FillText(rowBuffer, 14*8, float64(rowNo-e.scroll+1+1)*24)
-				//fmt.Println("<", rowBuffer, ">")
+
+				for len(rowBuffer) > e.rowLen {
+					cv.FillText(rowBuffer[:e.rowLen], 14*8, float64(rowsDrawn-e.scroll+1+1)*24)
+					rowsDrawn++
+
+					rowBuffer = rowBuffer[e.rowLen:]
+				}
+				cv.FillText(rowBuffer, 14*8, float64(rowsDrawn-e.scroll+1+1)*24)
+				rowsDrawn++
 
 				rowBuffer = ""
 				rowNo++
-				if rowNo >= min(e.scroll+e.Height, len(e.rows)) {
+				if rowNo >= min(e.scroll+e.Height, len(e.rows)) || rowsDrawn >= e.Height {
 					break outer
 				}
 
@@ -366,10 +377,10 @@ outer:
 	// the file ends in a newline
 	if rowNo < len(e.rows) && rowNo < e.scroll+e.Height {
 		cv.SetFillStyle("#888")
-		cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
+		cv.FillText(fmt.Sprintf("%04d", rowsDrawn+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
 
 		cv.SetFillStyle("#FFF")
-		cv.FillText(rowBuffer, 0, float64(rowNo-e.scroll+1)*24)
+		cv.FillText(rowBuffer, 0, float64(rowsDrawn-e.scroll+1)*24)
 	}
 }
 
