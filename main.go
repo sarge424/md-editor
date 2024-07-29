@@ -20,7 +20,7 @@ var (
 
 func main() {
 	// WINDOW INIT
-	win, cv, err := glfwcanvas.CreateWindow(1000, 800, "Noter")
+	win, cv, err := glfwcanvas.CreateWindow(14*80, 24*35, "Noter")
 	win.Window.SetAttrib(glfw.Resizable, 1)
 	if err != nil {
 		panic(err)
@@ -101,7 +101,7 @@ func main() {
 	}
 
 	//EDITOR SETUP
-	ed := editor.New(100)
+	ed := editor.New(33, 100)
 	ed.LoadFile(file)
 
 	curr = &ed

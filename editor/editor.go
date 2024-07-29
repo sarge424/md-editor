@@ -32,14 +32,16 @@ type Editor struct {
 	rows []row
 
 	mode int
+	p    pointer
 
 	scroll int
-	p      pointer
+	Height int
 }
 
-func New(chunkSize int) Editor {
+func New(height, chunkSize int) Editor {
 	return Editor{
-		text: newContent(chunkSize),
+		text:   newContent(chunkSize),
+		Height: height,
 	}
 }
 
@@ -57,6 +59,14 @@ func (e *Editor) MoveY(dy int) {
 
 	// if the row is too short
 	e.p.x = min(e.rows[e.p.y].length, e.p.oldx)
+
+	//if the cursor goes off the screen, scroll
+	if e.p.y < e.scroll {
+		e.scroll = e.p.y
+	}
+	if e.p.y >= e.scroll+e.Height {
+		e.scroll = e.p.y - e.Height + 1
+	}
 }
 
 func (e *Editor) HandleKeystroke(k kb.Keystroke) {
@@ -80,9 +90,9 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 
 		// scroll
 		case '[':
-			e.scroll++
+			e.scroll = min(e.scroll+1, len(e.rows)-e.Height)
 		case ']':
-			e.scroll--
+			e.scroll = max(e.scroll-1, 0)
 		}
 
 	} else if e.mode == EditMode {
@@ -248,20 +258,38 @@ func (e Editor) String() string {
 }
 
 func (e Editor) DrawPointer(cv *canvas.Canvas) {
+	if e.p.y < e.scroll || e.p.y >= e.scroll+e.Height {
+		return
+	}
 	switch e.mode {
 	case NavMode:
 		cv.SetFillStyle("#ff4242")
 	case EditMode:
 		cv.SetFillStyle("#4242ff")
 	}
-	cv.FillRect(float64(e.p.x)*14, float64(e.p.y-e.scroll)*24, 14, 24)
+	// y extra +1 formatting to leave space for border
+	cv.FillRect(float64(e.p.x+8)*14, float64(e.p.y-e.scroll+1)*24, 14, 24)
 }
 
 func (e Editor) Render(cv *canvas.Canvas) {
+	// panel
+	cv.SetFillStyle("#444")
+	cv.FillRect(12, 12, 80*14, 34*24)
+
+	// line no divider
+	cv.SetStrokeStyle("#888")
+	cv.BeginPath()
+	cv.MoveTo(14*7, 24)
+	cv.LineTo(14*7, float64(24*(1+e.Height)))
+	cv.Stroke()
+	cv.BeginPath()
+	cv.MoveTo(14*8+14*50, 24)
+	cv.LineTo(14*8+14*50, float64(24*(1+e.Height)))
+	cv.Stroke()
+
 	e.DrawPointer(cv)
 
-	cv.SetFillStyle("#FFF")
-	rowNo := 0
+	rowNo := e.scroll
 	chunkStart := 0
 	rowBuffer := ""
 
@@ -278,12 +306,18 @@ outer:
 			if rowEnd <= chunkEnd {
 				rowBuffer += ch[st : rowEnd-chunkStart]
 
-				cv.FillText(rowBuffer, 0, float64(rowNo-e.scroll+1)*24)
+				//row numbers
+				cv.SetFillStyle("#888")
+				cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
+
+				// y +1 extra formatting to leave space for border
+				cv.SetFillStyle("#FFF")
+				cv.FillText(rowBuffer, 14*8, float64(rowNo-e.scroll+1+1)*24)
 				//fmt.Println("<", rowBuffer, ">")
 
 				rowBuffer = ""
 				rowNo++
-				if rowNo >= len(e.rows) {
+				if rowNo >= e.scroll+e.Height {
 					break outer
 				}
 
