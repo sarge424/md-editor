@@ -81,6 +81,8 @@ func (s Shortcut) String() string {
 		ans += "TAB"
 	} else if s.Code == 14 {
 		ans += "BCKSP"
+	} else if s.Char != 0 {
+		ans += string(s.Char)
 	} else {
 		ans += fmt.Sprint(s.Code)
 	}

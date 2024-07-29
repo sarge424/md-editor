@@ -28,8 +28,9 @@ type pointer struct {
 }
 
 type Editor struct {
-	text content
-	rows []row
+	filename string
+	text     content
+	rows     []row
 
 	mode int
 	p    pointer
@@ -102,22 +103,30 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 
 func (e *Editor) HandleShortcut(k kb.Shortcut) {
 	if e.mode == EditMode {
-
 		switch fmt.Sprint(k) { // switch on the string representation
+		//uses returns to avoid the all-modes switch
 		case "1": //ESC
 			e.mode = NavMode
+			return
 
 		case "BCKSP", "SHF BCKSP":
 			e.DeleteText(1)
+			return
 
 		case "ENTER":
 			e.InsertText("\n")
+			return
 
-		default:
-			fmt.Println(k)
 		}
+	}
 
-	} else {
+	// ALL MODES
+	switch fmt.Sprint(k) {
+	case "CTL S":
+		e.SaveFile()
+		fmt.Println("File saved.")
+
+	default:
 		fmt.Println(k)
 	}
 }
@@ -198,10 +207,10 @@ func (e *Editor) DeleteText(length int) {
 
 		e.p.y--
 	}
-
 }
 
 func (e *Editor) LoadFile(file string) {
+	e.filename = file
 	dat, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatal(err)
@@ -219,11 +228,34 @@ func (e *Editor) LoadFile(file string) {
 		e.text.append(data)
 	}
 
-	// create rows
-	e.MakeRows()
+	// only one row
+	if !strings.Contains(data, "\n") {
+		e.rows = append(e.rows, row{
+			index:  0,
+			length: len(data),
+		})
+	} else {
+		// create rows
+		e.MakeRows()
+	}
+}
+
+func (e *Editor) SaveFile() {
+	f, err := os.Create(e.filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	for _, ch := range e.text.chunks {
+		ch = strings.ReplaceAll(ch, "    ", "\t")
+		f.WriteString(ch)
+	}
+	f.Sync()
 }
 
 func (e *Editor) MakeRows() {
+
 	e.rows = nil
 	chunkIndex := 0
 	last := -1
@@ -317,7 +349,7 @@ outer:
 
 				rowBuffer = ""
 				rowNo++
-				if rowNo >= e.scroll+e.Height {
+				if rowNo >= min(e.scroll+e.Height, len(e.rows)) {
 					break outer
 				}
 
@@ -332,7 +364,10 @@ outer:
 
 	// the file ends in a newline
 	if rowNo < len(e.rows) {
-		// fmt.Println("<", rowBuffer, ">")
+		cv.SetFillStyle("#888")
+		cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
+
+		cv.SetFillStyle("#FFF")
 		cv.FillText(rowBuffer, 0, float64(rowNo-e.scroll+1)*24)
 	}
 }
