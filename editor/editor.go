@@ -62,6 +62,7 @@ func (e *Editor) MoveY(dy int) {
 func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 	// standardize letters to uppercase
 	if e.mode == NavMode {
+
 		switch k.Std() {
 		// movement
 		case 'H':
@@ -90,28 +91,72 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 }
 
 func (e *Editor) HandleShortcut(k kb.Shortcut) {
-	switch fmt.Sprint(k) { // switch on the string representation
-	case "1": //ESC
-		if e.mode == EditMode {
+	if e.mode == EditMode {
+
+		switch fmt.Sprint(k) { // switch on the string representation
+		case "1": //ESC
 			e.mode = NavMode
-		}
 
-	case "BCKSP", "SHF BCKSP":
-		if e.mode == EditMode {
+		case "BCKSP", "SHF BCKSP":
 			e.DeleteText(1)
+
+		case "ENTER":
+			e.InsertText("\n")
+
+		default:
+			fmt.Println(k)
 		}
 
-	default:
+	} else {
 		fmt.Println(k)
 	}
 }
 
+func (e *Editor) newLine() {
+	// add a new line at cursor pos
+	text := "\n"
+	pointerPos := e.rows[e.p.y].index + e.p.x
+	e.text.Insert(text, pointerPos)
+
+	// split row
+	r := row{
+		index:  pointerPos + 1,
+		length: e.rows[e.p.y].index + e.rows[e.p.y].length - pointerPos,
+	}
+	e.rows[e.p.y].length = pointerPos - e.rows[e.p.y].index
+	e.rows = slices.Insert(e.rows, e.p.y+1, r)
+
+	//move cursor
+	e.p.x = 0
+	e.p.oldx = 0
+	e.MoveY(1)
+
+	//offset the start of all following rows
+	for i := e.p.y + 1; i < len(e.rows); i++ {
+		e.rows[i].index += len(text)
+	}
+}
+
 func (e *Editor) InsertText(text string) {
+	//split text by newline and add them separately
+	if nl := strings.Index(text, "\n"); nl >= 0 {
+		if nl > 0 {
+			e.InsertText(text[:nl])
+		}
+		e.newLine()
+		if nl+1 < len(text) {
+			e.InsertText(text[nl+1:])
+		}
+
+		return
+	}
+
 	pointerPos := e.rows[e.p.y].index + e.p.x
 	e.text.Insert(text, pointerPos)
 
 	e.p.x += len(text)
 	e.rows[e.p.y].length += len(text)
+
 	//offset the start of all following rows
 	for i := e.p.y + 1; i < len(e.rows); i++ {
 		e.rows[i].index += len(text)
