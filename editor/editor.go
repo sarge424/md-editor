@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/sarge424/notes/kb"
@@ -127,6 +128,7 @@ func (e *Editor) DeleteText(length int) {
 	if pointerPos < 0 {
 		return
 	}
+
 	e.text.Delete(pointerPos, length)
 
 	e.p.x -= length
@@ -134,6 +136,17 @@ func (e *Editor) DeleteText(length int) {
 	//offset the start of all following rows
 	for i := e.p.y + 1; i < len(e.rows); i++ {
 		e.rows[i].index -= length
+	}
+
+	//merge this row with prev if newline was removed
+	if e.p.x < 0 {
+		e.p.x += e.rows[e.p.y-1].length + 1
+		e.p.oldx = e.p.x
+
+		e.rows[e.p.y-1].length += e.rows[e.p.y].length + 1
+		e.rows = slices.Concat(e.rows[:e.p.y], e.rows[min(e.p.y+1, len(e.rows)):])
+
+		e.p.y--
 	}
 
 }
@@ -157,6 +170,10 @@ func (e *Editor) LoadFile(file string) {
 	}
 
 	// create rows
+	e.MakeRows()
+}
+
+func (e *Editor) MakeRows() {
 	e.rows = nil
 	chunkIndex := 0
 	last := -1
