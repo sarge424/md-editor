@@ -55,13 +55,8 @@ func (e *Editor) MoveY(dy int) {
 	newY := clamp(e.p.y+dy, 0, len(e.rows)-1)
 	e.p.y = newY
 
-	if e.p.x > e.rows[e.p.y].length {
-		e.p.x = e.rows[e.p.y].length
-	}
-
-	if e.p.oldx <= e.rows[e.p.y].length {
-		e.p.x = e.p.oldx
-	}
+	// if the row is too short
+	e.p.x = min(e.rows[e.p.y].length, e.p.oldx)
 }
 
 func (e *Editor) HandleKeystroke(k kb.Keystroke) {
