@@ -191,6 +191,7 @@ func (e *Editor) DeleteText(length int) {
 	e.text.Delete(pointerPos, length)
 
 	e.p.x -= length
+	e.p.oldx = e.p.x
 	e.rows[e.p.y].length -= length
 	//offset the start of all following rows
 	for i := e.p.y + 1; i < len(e.rows); i++ {
