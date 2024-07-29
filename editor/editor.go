@@ -363,7 +363,7 @@ outer:
 	}
 
 	// the file ends in a newline
-	if rowNo < len(e.rows) {
+	if rowNo < len(e.rows) && rowNo < e.scroll+e.Height {
 		cv.SetFillStyle("#888")
 		cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
 

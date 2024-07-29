@@ -1,6 +1,9 @@
 package main
 
 import (
+	"image"
+	"os"
+
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/sarge424/notes/editor"
 	"github.com/sarge424/notes/kb"
@@ -20,8 +23,9 @@ var (
 
 func main() {
 	// WINDOW INIT
-	win, cv, err := glfwcanvas.CreateWindow(14*80, 24*35, "Noter")
-	win.Window.SetAttrib(glfw.Resizable, 1)
+	win, cv, err := glfwcanvas.CreateWindow(14*80+24, 24*35, "mdedit")
+	win.Window.SetAttrib(glfw.Resizable, 0)
+	win.Window.SetAttrib(glfw.Decorated, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -31,6 +35,11 @@ func main() {
 	if err != nil {
 		panic("Error loading font")
 	}
+
+	iconFile, _ := os.Open("icon.png")
+	defer iconFile.Close()
+	icon, _, _ := image.Decode(iconFile)
+	win.Window.SetIcon([]image.Image{icon})
 
 	//EVENT HANDLING
 	win.KeyDown = func(scancode int, rn rune, name string) {
