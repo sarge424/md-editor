@@ -79,20 +79,48 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 	if e.mode == NavMode {
 
 		// standardize letters to uppercase
-		switch k.Std() {
+		switch k {
 
 		// movement
-		case 'H':
+		case 'h', 'H':
 			e.MoveX(-1)
-		case 'L':
+		case 'l', 'L':
 			e.MoveX(1)
-		case 'J':
+		case 'j', 'J':
 			e.MoveY(1)
-		case 'K':
+		case 'k', 'K':
 			e.MoveY(-1)
 
+		case 'w':
+			// rem is all the text after pointer in the row
+			rem := e.text.Get(e.rows[e.p.y].index+e.p.x+1, e.rows[e.p.y].length-e.p.x)
+			if ix := strings.Index(rem, " "); ix >= 0 {
+				e.MoveX(ix + 1)
+			} else {
+				e.MoveX(e.rows[e.p.y].length)
+			}
+
+		case 'W':
+			// rem is all the text before pointer in the row
+			rem := e.text.Get(e.rows[e.p.y].index, e.p.x)
+
+			// find last space in rem
+			ix := -1
+			for i := len(rem) - 1; i >= 0; i-- {
+				if rem[i] == ' ' {
+					ix = i
+					break
+				}
+			}
+
+			if ix >= 0 {
+				e.MoveX(-(len(rem) - ix))
+			} else {
+				e.MoveX(-e.rows[e.p.y].length)
+			}
+
 		// mode switch
-		case 'I':
+		case 'i', 'I':
 			e.mode = EditMode
 
 		// scroll
@@ -339,7 +367,7 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 
 	xpos := e.p.x % e.rowLen
 	ypos := e.p.x/e.rowLen + yloc
-	fmt.Println("Pointer at", xpos, float64(e.p.y+ypos-e.scroll+1))
+
 	cv.FillRect(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+1)*24, 14, 24)
 }
 

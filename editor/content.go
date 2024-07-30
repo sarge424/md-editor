@@ -89,6 +89,23 @@ func (c *content) Delete(index, length int) {
 	}
 }
 
+func (c content) Get(index, length int) string {
+	s := ""
+
+	chunkStart := 0
+	for _, ch := range c.chunks {
+		if index < chunkStart+len(ch) {
+			s += ch[max(0, index-chunkStart):min(index+length-chunkStart, len(ch))]
+		}
+
+		if index+length <= chunkStart {
+			break
+		}
+	}
+
+	return s
+}
+
 func (c content) String() string {
 	s := ""
 	s += fmt.Sprintln(len(c.chunks), "[")
