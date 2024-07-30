@@ -110,7 +110,7 @@ func main() {
 	}
 
 	//EDITOR SETUP
-	ed := editor.New(33, 100)
+	ed := editor.NewEditor(50, 33, 100)
 	ed.LoadFile(file)
 
 	curr = &ed

@@ -41,15 +41,16 @@ type Editor struct {
 	Height int
 }
 
-func New(height, chunkSize int) Editor {
+func NewEditor(width, height, chunkSize int) Editor {
 	return Editor{
 		text:   newContent(chunkSize),
 		Height: height,
-		rowLen: 20,
+		rowLen: width,
 	}
 }
 
 func (e *Editor) MoveX(dx int) {
+	// move cursor horizontally (clamp to row length)
 	newX := clamp(e.p.x+dx, 0, e.rows[e.p.y].length)
 	if e.p.x != newX {
 		e.p.x = newX
@@ -58,10 +59,11 @@ func (e *Editor) MoveX(dx int) {
 }
 
 func (e *Editor) MoveY(dy int) {
+	//move the cursor vertically (clamp to no. of lines)
 	newY := clamp(e.p.y+dy, 0, len(e.rows)-1)
 	e.p.y = newY
 
-	// if the row is too short
+	// if the row is too short, change x
 	e.p.x = min(e.rows[e.p.y].length, e.p.oldx)
 
 	//if the cursor goes off the screen, scroll
@@ -74,10 +76,11 @@ func (e *Editor) MoveY(dy int) {
 }
 
 func (e *Editor) HandleKeystroke(k kb.Keystroke) {
-	// standardize letters to uppercase
 	if e.mode == NavMode {
 
+		// standardize letters to uppercase
 		switch k.Std() {
+
 		// movement
 		case 'H':
 			e.MoveX(-1)
@@ -134,13 +137,14 @@ func (e *Editor) HandleShortcut(k kb.Shortcut) {
 	}
 }
 
-func (e *Editor) newLine() {
+func (e *Editor) insertNewLine() {
 	// add a new line at cursor pos
+
 	text := "\n"
 	pointerPos := e.rows[e.p.y].index + e.p.x
 	e.text.Insert(text, pointerPos)
 
-	// split row
+	// split row at cursor
 	r := row{
 		index:  pointerPos + 1,
 		length: e.rows[e.p.y].index + e.rows[e.p.y].length - pointerPos,
@@ -153,19 +157,19 @@ func (e *Editor) newLine() {
 	e.p.oldx = 0
 	e.MoveY(1)
 
-	//offset the start of all following rows
+	//offset the start index of all following rows
 	for i := e.p.y + 1; i < len(e.rows); i++ {
 		e.rows[i].index += len(text)
 	}
 }
 
 func (e *Editor) InsertText(text string) {
-	//split text by newline and add them separately
+	//if the text has newlines, split around it and add it separately
 	if nl := strings.Index(text, "\n"); nl >= 0 {
 		if nl > 0 {
 			e.InsertText(text[:nl])
 		}
-		e.newLine()
+		e.insertNewLine()
 		if nl+1 < len(text) {
 			e.InsertText(text[nl+1:])
 		}
@@ -173,11 +177,13 @@ func (e *Editor) InsertText(text string) {
 		return
 	}
 
+	//get pointer index
 	pointerPos := e.rows[e.p.y].index + e.p.x
 	e.text.Insert(text, pointerPos)
 
-	e.p.x += len(text)
+	//move pointer
 	e.rows[e.p.y].length += len(text)
+	e.MoveX(len(text))
 
 	//offset the start of all following rows
 	for i := e.p.y + 1; i < len(e.rows); i++ {
@@ -186,42 +192,51 @@ func (e *Editor) InsertText(text string) {
 }
 
 func (e *Editor) DeleteText(length int) {
+	// dont allow backspace on the first character in the file
 	pointerPos := e.rows[e.p.y].index + e.p.x - 1
 	if pointerPos < 0 {
 		return
 	}
 
+	// clear from the piece table
 	e.text.Delete(pointerPos, length)
 
-	e.p.x -= length
-	e.p.oldx = e.p.x
+	// move cursor
+	e.MoveX(-length)
 	e.rows[e.p.y].length -= length
-	//offset the start of all following rows
+
+	// offset the start of all following rows
 	for i := e.p.y + 1; i < len(e.rows); i++ {
 		e.rows[i].index -= length
 	}
 
 	//merge this row with prev if newline was removed
 	if e.p.x < 0 {
+		//fix pointer xpos
 		e.p.x += e.rows[e.p.y-1].length + 1
 		e.p.oldx = e.p.x
 
+		//merge rows
 		e.rows[e.p.y-1].length += e.rows[e.p.y].length + 1
 		e.rows = slices.Concat(e.rows[:e.p.y], e.rows[min(e.p.y+1, len(e.rows)):])
 
+		//fix pointer y
 		e.p.y--
 	}
 }
 
 func (e *Editor) LoadFile(file string) {
+	// open the file
 	e.filename = file
 	dat, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// cant handle tabs...
 	data := strings.ReplaceAll(string(dat), "\t", "    ")
 
+	// append text as pieces
 	for len(data) >= e.text.chunkSize {
 		e.text.append(data[:e.text.chunkSize])
 		data = data[e.text.chunkSize:]
@@ -232,7 +247,8 @@ func (e *Editor) LoadFile(file string) {
 		e.text.append(data)
 	}
 
-	// only one row
+	//generating rows
+	// only one row edge case
 	if !strings.Contains(data, "\n") {
 		e.rows = append(e.rows, row{
 			index:  0,
@@ -259,20 +275,31 @@ func (e *Editor) SaveFile() {
 }
 
 func (e *Editor) MakeRows() {
+	// generate the rows
 
 	e.rows = nil
-	chunkIndex := 0
-	last := -1
+	chunkIndex := 0 // index of first character in chunk
+	last := -1      // index after previous newline
+
+	// loop through each chunk
 	for i, ch := range e.text.chunks {
+
+		// loop until no newlines are found in this chunk
 		nextLn := strings.Index(ch, "\n")
 		for ; nextLn >= 0; nextLn = strings.Index(ch, "\n") {
+			// create a row
 			r := row{
 				index:  last + 1,
 				length: chunkIndex + nextLn - last - 1,
 			}
+
+			// update index pointers
 			last = chunkIndex + nextLn
+
+			// dummy replace so that the same newline isnt found again
 			ch = strings.Replace(ch, "\n", "Q", 1)
 
+			// add the new row to rows
 			e.rows = append(e.rows, r)
 		}
 
@@ -285,6 +312,7 @@ func (e *Editor) MakeRows() {
 			e.rows = append(e.rows, r)
 		}
 
+		// update the chunk start index
 		chunkIndex += len(ch)
 	}
 }
@@ -303,7 +331,12 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 	case EditMode:
 		cv.SetFillStyle("#4242ff")
 	}
-	// y extra +1 formatting to leave space for border
+
+	// xpos -> offset % max length for long rows
+	// ypos -> additional y offset in a long row
+	// yloc -> additional offset from previous rows spanning extra lines
+	// extra constants to maintain spacing
+
 	xpos := e.p.x % e.rowLen
 	ypos := e.p.x/e.rowLen + yloc
 	fmt.Println("Pointer at", xpos, float64(e.p.y+ypos-e.scroll+1))
@@ -311,25 +344,14 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 }
 
 func (e Editor) Render(cv *canvas.Canvas) {
-	// panel
-	cv.SetFillStyle("#444")
-	cv.FillRect(12, 12, 80*14, 34*24)
 
-	// line no divider
-	cv.SetStrokeStyle("#888")
-	cv.BeginPath()
-	cv.MoveTo(14*7, 24)
-	cv.LineTo(14*7, float64(24*(1+e.Height)))
-	cv.Stroke()
-	cv.BeginPath()
-	cv.MoveTo(14*8+14*50, 24)
-	cv.LineTo(14*8+14*50, float64(24*(1+e.Height)))
-	cv.Stroke()
+	// draw the background pane, rownumbers divider, etc
+	e.DrawPanel(cv)
 
-	rowsDrawn := 0
-	rowNo := e.scroll
-	chunkStart := 0
-	rowBuffer := ""
+	rowsDrawn := 0    // number of rows drawn (includes extra height of multiline rows)
+	rowNo := e.scroll // current row to be drawn
+	chunkStart := 0   // start index of the current chunk
+	rowBuffer := ""   // string to be displayed in this row
 
 	// in case the file is empty
 	if rowNo == e.p.y {
@@ -345,7 +367,7 @@ outer:
 
 			rowEnd := e.rows[rowNo].index + e.rows[rowNo].length
 
-			// the row ends in this chunk
+			// if the row ends in this chunk, finalize buffer and display
 			st := max(0, e.rows[rowNo].index-chunkStart)
 			if rowEnd <= chunkEnd {
 				rowBuffer += ch[st : rowEnd-chunkStart]
@@ -375,7 +397,7 @@ outer:
 					break outer
 				}
 
-			} else { // the row does not end in this chunk
+			} else { // the row does not end in this chunk, continue to the next one
 				rowBuffer += ch[st:]
 				break
 			}
@@ -392,6 +414,23 @@ outer:
 		cv.SetFillStyle("#FFF")
 		cv.FillText(rowBuffer, 0, float64(rowsDrawn-e.scroll+1)*24)
 	}
+}
+
+func (e Editor) DrawPanel(cv *canvas.Canvas) {
+	// panel
+	cv.SetFillStyle("#444")
+	cv.FillRect(12, 12, 80*14, 34*24)
+
+	// line no divider
+	cv.SetStrokeStyle("#888")
+	cv.BeginPath()
+	cv.MoveTo(14*7, 24)
+	cv.LineTo(14*7, float64(24*(1+e.Height)))
+	cv.Stroke()
+	cv.BeginPath()
+	cv.MoveTo(14*8+14*50, 24)
+	cv.LineTo(14*8+14*50, float64(24*(1+e.Height)))
+	cv.Stroke()
 }
 
 func clamp(x, lo, hi int) int {
