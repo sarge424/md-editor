@@ -91,6 +91,9 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 		case 'k', 'K':
 			e.MoveY(-1)
 
+		case 'q':
+			fmt.Println(e)
+
 		case 'w':
 			// rem is all the text after pointer in the row
 			rem := e.text.Get(e.rows[e.p.y].index+e.p.x+1, e.rows[e.p.y].length-e.p.x)
@@ -230,7 +233,7 @@ func (e *Editor) DeleteText(length int) {
 	e.text.Delete(pointerPos, length)
 
 	// move cursor
-	e.MoveX(-length)
+	e.p.x -= length // this is checked later when merging rows - dont use the function
 	e.rows[e.p.y].length -= length
 
 	// offset the start of all following rows
@@ -240,6 +243,8 @@ func (e *Editor) DeleteText(length int) {
 
 	//merge this row with prev if newline was removed
 	if e.p.x < 0 {
+		// if empty row, remove it
+
 		//fix pointer xpos
 		e.p.x += e.rows[e.p.y-1].length + 1
 		e.p.oldx = e.p.x
@@ -250,6 +255,9 @@ func (e *Editor) DeleteText(length int) {
 
 		//fix pointer y
 		e.p.y--
+
+	} else {
+		e.p.oldx = e.p.x // since e.p.x was set manually earlier
 	}
 }
 
@@ -346,7 +354,7 @@ func (e *Editor) MakeRows() {
 }
 
 func (e Editor) String() string {
-	return e.text.String()
+	return e.text.String() + "\n\n" + fmt.Sprint(e.rows)
 }
 
 func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
