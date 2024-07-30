@@ -293,7 +293,7 @@ func (e Editor) String() string {
 	return e.text.String()
 }
 
-func (e Editor) DrawPointer(cv *canvas.Canvas) {
+func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 	if e.p.y < e.scroll || e.p.y >= e.scroll+e.Height {
 		return
 	}
@@ -304,7 +304,10 @@ func (e Editor) DrawPointer(cv *canvas.Canvas) {
 		cv.SetFillStyle("#4242ff")
 	}
 	// y extra +1 formatting to leave space for border
-	cv.FillRect(float64(e.p.x+8)*14, float64(e.p.y-e.scroll+1)*24, 14, 24)
+	xpos := e.p.x % e.rowLen
+	ypos := e.p.x/e.rowLen + yloc
+	fmt.Println("Pointer at", xpos, float64(e.p.y+ypos-e.scroll+1))
+	cv.FillRect(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+1)*24, 14, 24)
 }
 
 func (e Editor) Render(cv *canvas.Canvas) {
@@ -323,12 +326,15 @@ func (e Editor) Render(cv *canvas.Canvas) {
 	cv.LineTo(14*8+14*50, float64(24*(1+e.Height)))
 	cv.Stroke()
 
-	e.DrawPointer(cv)
-
 	rowsDrawn := 0
 	rowNo := e.scroll
 	chunkStart := 0
 	rowBuffer := ""
+
+	// in case the file is empty
+	if rowNo == e.p.y {
+		e.DrawPointer(cv, 0)
+	}
 
 outer:
 	for _, ch := range e.text.chunks {
@@ -336,6 +342,7 @@ outer:
 
 		// as long as rows can start in this chunk
 		for e.rows[rowNo].index < chunkEnd {
+
 			rowEnd := e.rows[rowNo].index + e.rows[rowNo].length
 
 			// the row ends in this chunk
@@ -345,7 +352,7 @@ outer:
 
 				//row numbers
 				cv.SetFillStyle("#888")
-				cv.FillText(fmt.Sprintf("%04d", rowsDrawn+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
+				cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
 
 				// y +1 extra formatting to leave space for border
 				cv.SetFillStyle("#FFF")
@@ -361,6 +368,9 @@ outer:
 
 				rowBuffer = ""
 				rowNo++
+				if rowNo == e.p.y {
+					e.DrawPointer(cv, rowsDrawn-rowNo)
+				}
 				if rowNo >= min(e.scroll+e.Height, len(e.rows)) || rowsDrawn >= e.Height {
 					break outer
 				}
@@ -377,7 +387,7 @@ outer:
 	// the file ends in a newline
 	if rowNo < len(e.rows) && rowNo < e.scroll+e.Height {
 		cv.SetFillStyle("#888")
-		cv.FillText(fmt.Sprintf("%04d", rowsDrawn+1), 14*2, float64(rowNo-e.scroll+1+1)*24)
+		cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
 
 		cv.SetFillStyle("#FFF")
 		cv.FillText(rowBuffer, 0, float64(rowsDrawn-e.scroll+1)*24)
