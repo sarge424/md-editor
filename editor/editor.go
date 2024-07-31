@@ -91,9 +91,6 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 		case 'k', 'K':
 			e.MoveY(-1)
 
-		case 'q':
-			fmt.Println(e)
-
 		case 'w':
 			// rem is all the text after pointer in the row
 			rem := e.text.Get(e.rows[e.p.y].index+e.p.x+1, e.rows[e.p.y].length-e.p.x)
@@ -408,21 +405,7 @@ outer:
 			if rowEnd <= chunkEnd {
 				rowBuffer += ch[st : rowEnd-chunkStart]
 
-				//row numbers
-				cv.SetFillStyle("#888")
-				cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
-
-				// y +1 extra formatting to leave space for border
-				cv.SetFillStyle("#FFF")
-
-				for len(rowBuffer) > e.rowLen {
-					cv.FillText(rowBuffer[:e.rowLen], 14*8, float64(rowsDrawn-e.scroll+1+1)*24)
-					rowsDrawn++
-
-					rowBuffer = rowBuffer[e.rowLen:]
-				}
-				cv.FillText(rowBuffer, 14*8, float64(rowsDrawn-e.scroll+1+1)*24)
-				rowsDrawn++
+				rowsDrawn = e.DrawLine(rowBuffer, rowNo, rowsDrawn, cv)
 
 				rowBuffer = ""
 				rowNo++
@@ -450,6 +433,30 @@ outer:
 		cv.SetFillStyle("#FFF")
 		cv.FillText(rowBuffer, 0, float64(rowsDrawn-e.scroll+1)*24)
 	}
+}
+
+func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canvas) int {
+	//row numbers
+	cv.SetFillStyle("#888")
+	cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
+
+	//row content
+	if strings.HasPrefix(rowBuffer, "# ") {
+		cv.SetFillStyle("#F00")
+	} else {
+		cv.SetFillStyle("#FFF")
+	}
+
+	for len(rowBuffer) > e.rowLen {
+		cv.FillText(rowBuffer[:e.rowLen], 14*8, float64(rowsDrawn-e.scroll+1+1)*24)
+		rowsDrawn++
+
+		rowBuffer = rowBuffer[e.rowLen:]
+	}
+	cv.FillText(rowBuffer, 14*8, float64(rowsDrawn-e.scroll+1+1)*24)
+	rowsDrawn++
+
+	return rowsDrawn
 }
 
 func (e Editor) DrawPanel(cv *canvas.Canvas) {
