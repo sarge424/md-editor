@@ -460,7 +460,7 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 	} else {
 		cv.SetFillStyle(config.Color.RowText)
 	}
-	cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn+1+1)*24)
+	cv.FillText(fmt.Sprintf("%4d", rowNo+1), 14*2, float64(rowsDrawn+1+1)*24)
 
 	//pointer
 	if rowNo == e.p.y {
