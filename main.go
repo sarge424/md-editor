@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"os"
+	"time"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/sarge424/notes/editor"
@@ -14,12 +15,27 @@ var (
 	font = "C:/windows/fonts/liberationmono-regular.ttf"
 	file = "C:/users/arjun/Desktop/vault/test.md"
 
-	kbState kb.State
-	curr    kb.Keyboarder
+	kbState    kb.State
+	curr       kb.Keyboarder
+	bspaceLift = make(chan interface{})
 
 	mouseX, mouseY int
 	moused         bool
 )
+
+func holdKey(code int, stop <-chan interface{}) {
+	time.Sleep(500 * time.Millisecond)
+
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+			curr.HandleShortcut(kbState.Emit(code, 0))
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+}
 
 func main() {
 	// WINDOW INIT
@@ -60,6 +76,10 @@ func main() {
 			if notAlphaNum || modPressed {
 				sc := kbState.Emit(scancode, rn)
 				curr.HandleShortcut(sc)
+
+				if scancode == 14 {
+					go holdKey(scancode, bspaceLift)
+				}
 			}
 		}
 	}
@@ -79,6 +99,8 @@ func main() {
 		} else if scancode == 56 || scancode == 312 {
 			//ALT
 			kbState.Alt--
+		} else if scancode == 14 {
+			bspaceLift <- true
 		}
 
 		// cap counters at 0
