@@ -6,7 +6,6 @@ import (
 	"os"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/sarge424/notes/config"
 	"github.com/sarge424/notes/kb"
@@ -149,7 +148,7 @@ func (e *Editor) HandleShortcut(k kb.Shortcut) {
 			e.DeleteText(1)
 			return
 
-		case "ENTER":
+		case "ENTER", "SHF ENTER", "CTL ENTER":
 			e.InsertText("\n")
 			return
 
@@ -374,11 +373,7 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 	case NavMode:
 		cv.SetFillStyle(config.Color.NavPointer)
 	case EditMode:
-		if time.Now().UnixMilli()%1000 > 500 {
-			cv.SetFillStyle(config.Color.EditPointer)
-		} else {
-			cv.SetFillStyle("#0000")
-		}
+		cv.SetFillStyle(config.Color.EditPointer)
 	}
 
 	// xpos -> offset % max length for long rows
@@ -457,6 +452,10 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 	//row style (font)
 	if strings.HasPrefix(rowBuffer, "# ") {
 		config.SetFontSize(72)
+	} else if strings.HasPrefix(rowBuffer, "## ") {
+		config.SetFontSize(48)
+	} else {
+		config.SetFontSize(24)
 	}
 
 	//pointer
