@@ -375,11 +375,10 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 		cv.SetFillStyle(config.Color.NavPointer)
 	case EditMode:
 		if time.Now().UnixMilli()%1000 > 500 {
-			cv.SetStrokeStyle(config.Color.EditPointer)
+			cv.SetFillStyle(config.Color.EditPointer)
 		} else {
-			cv.SetStrokeStyle("#0000")
+			cv.SetFillStyle("#0000")
 		}
-		cv.SetLineWidth(2)
 	}
 
 	// xpos -> offset % max length for long rows
@@ -387,18 +386,15 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 	// yloc -> additional offset from previous rows spanning extra lines
 	// extra constants to maintain spacing
 
-	xpos := e.p.x % e.rowLen
-	ypos := e.p.x/e.rowLen + yloc
+	// width and height of a character
+	xw := float64(14 * (config.FontSize / 24))
+	yw := float64(config.FontSize)
 
-	switch e.mode {
-	case NavMode:
-		cv.FillRect(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+1)*24, 14, 24)
-	case EditMode:
-		cv.BeginPath()
-		cv.MoveTo(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+1)*24)
-		cv.LineTo(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+2)*24)
-		cv.Stroke()
-	}
+	rLen := e.rowLen / (config.FontSize / 24)
+	xpos := float64(e.p.x % rLen)
+	ypos := float64(e.p.x / rLen)
+
+	cv.FillRect(float64(14*8)+(xpos*xw), 24*float64(e.p.y-e.scroll+yloc+1)+ypos*yw, xw, yw)
 }
 
 func (e Editor) Render(cv *canvas.Canvas) {
@@ -410,11 +406,6 @@ func (e Editor) Render(cv *canvas.Canvas) {
 	rowNo := e.scroll // current row to be drawn
 	chunkStart := 0   // start index of the current chunk
 	rowBuffer := ""   // string to be displayed in this row
-
-	// in case the file is empty
-	if rowNo == e.p.y {
-		e.DrawPointer(cv, 0)
-	}
 
 outer:
 	for _, ch := range e.text.chunks {
@@ -434,9 +425,6 @@ outer:
 
 				rowBuffer = ""
 				rowNo++
-				if rowNo == e.p.y {
-					e.DrawPointer(cv, rowsDrawn-rowNo)
-				}
 				if rowNo >= min(e.scroll+e.Height, len(e.rows)) || rowsDrawn >= e.Height {
 					break outer
 				}
@@ -458,6 +446,7 @@ outer:
 
 func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canvas) int {
 	//row number
+	config.SetFontSize(24)
 	if e.p.y == rowNo {
 		cv.SetFillStyle(config.Color.CurrentRowText)
 	} else {
@@ -465,7 +454,17 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 	}
 	cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
 
-	//row style
+	//row style (font)
+	if strings.HasPrefix(rowBuffer, "# ") {
+		config.SetFontSize(72)
+	}
+
+	//pointer
+	if rowNo == e.p.y {
+		e.DrawPointer(cv, rowsDrawn-rowNo)
+	}
+
+	// row style (color)
 	if strings.HasPrefix(rowBuffer, "# ") {
 		cv.SetFillStyle(config.Color.H1)
 	} else if strings.HasPrefix(rowBuffer, "## ") {
@@ -476,14 +475,16 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 		cv.SetFillStyle(config.Color.Text)
 	}
 
-	for len(rowBuffer) > e.rowLen {
-		cv.FillText(rowBuffer[:e.rowLen], 14*8, float64(rowsDrawn-e.scroll+1+1)*24)
-		rowsDrawn++
+	rowHeight := config.FontSize / 24
+	rLen := e.rowLen / rowHeight
+	for len(rowBuffer) > rLen {
+		cv.FillText(rowBuffer[:rLen], 14*8, float64(rowsDrawn-e.scroll+rowHeight+1)*24)
+		rowsDrawn += rowHeight
 
-		rowBuffer = rowBuffer[e.rowLen:]
+		rowBuffer = rowBuffer[rLen:]
 	}
-	cv.FillText(rowBuffer, 14*8, float64(rowsDrawn-e.scroll+1+1)*24)
-	rowsDrawn++
+	cv.FillText(rowBuffer, 14*8, float64(rowsDrawn-e.scroll+rowHeight+1)*24)
+	rowsDrawn += rowHeight
 
 	return rowsDrawn
 }

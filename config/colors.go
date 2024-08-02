@@ -29,7 +29,7 @@ var Color = colorConfig{
 	EditorPanel:     "#201433",
 
 	NavPointer:  "#152d68",
-	EditPointer: "#ffffff",
+	EditPointer: "#a73169",
 
 	RowText:        "#355d68",
 	CurrentRowText: "#94c5ac",
@@ -43,6 +43,7 @@ var Color = colorConfig{
 var (
 	cv          *canvas.Canvas
 	CurrentFont *canvas.Font
+	FontSize    int
 )
 
 func Initialize(c *canvas.Canvas, font string) {
@@ -59,4 +60,5 @@ func Initialize(c *canvas.Canvas, font string) {
 
 func SetFontSize(size int) {
 	cv.SetFont(CurrentFont, float64(size))
+	FontSize = size
 }
