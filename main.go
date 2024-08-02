@@ -18,9 +18,19 @@ var (
 	font = "C:/windows/fonts/liberationmono-regular.ttf"
 	file = "C:/users/arjun/Desktop/vault/crypto.md"
 
-	kbState   kb.State
-	curr      kb.Keyboarder
-	liftChans = make(map[int]chan interface{})
+	kbState       kb.State
+	curr          kb.Keyboarder
+	liftChans     = make(map[int]chan interface{})
+	heldShortcuts = []string{
+		"BCKSP",
+		"SHF BCKSP",
+		"ENTER",
+		"SHF ENTER",
+		"328",
+		"331",
+		"333",
+		"336",
+	}
 
 	mouseX, mouseY int
 	moused         bool
@@ -81,7 +91,7 @@ func main() {
 				sc := kbState.Emit(scancode, rn)
 				curr.HandleShortcut(sc)
 
-				if slices.Contains([]string{"BCKSP", "SHF BCKSP", "ENTER", "SHF ENTER"}, sc.String()) {
+				if slices.Contains(heldShortcuts, sc.String()) {
 					if _, ok := liftChans[scancode]; !ok {
 						liftChans[scancode] = make(chan interface{})
 						fmt.Println("made hold channel for ", scancode)
@@ -110,7 +120,7 @@ func main() {
 		} else if scancode == 56 || scancode == 312 {
 			//ALT
 			kbState.Alt--
-		} else if scancode == 14 || scancode == 28 {
+		} else if slices.Contains(heldShortcuts, kbState.Emit(scancode, rn).String()) {
 			liftChans[scancode] <- 0
 		}
 
