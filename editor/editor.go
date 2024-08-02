@@ -188,7 +188,7 @@ func (e *Editor) HandleShortcut(k kb.Shortcut) {
 		e.MoveX(1)
 
 	default:
-		fmt.Println(k)
+		fmt.Println("Default shortcut:", k)
 	}
 }
 

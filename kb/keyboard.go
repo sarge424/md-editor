@@ -75,7 +75,7 @@ func (s Shortcut) String() string {
 		ans += "CAP "
 	}
 
-	if s.Char == 10 {
+	if s.Code == 28 || s.Code == 284 {
 		ans += "ENTER"
 	} else if s.Char == rune('\t') {
 		ans += "TAB"

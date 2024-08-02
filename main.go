@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -16,21 +18,21 @@ var (
 	font = "C:/windows/fonts/liberationmono-regular.ttf"
 	file = "C:/users/arjun/Desktop/vault/crypto.md"
 
-	kbState    kb.State
-	curr       kb.Keyboarder
-	bspaceLift = make(chan interface{})
+	kbState   kb.State
+	curr      kb.Keyboarder
+	liftChans = make(map[int]chan interface{})
 
 	mouseX, mouseY int
 	moused         bool
 )
 
-func holdKey(code int, stop <-chan interface{}) {
+func holdKey(code int, signal <-chan interface{}) {
 	ts := time.Now()
 	t := time.Now()
 
 	for {
 		select {
-		case <-stop:
+		case <-signal:
 			return
 		default:
 			if time.Since(t) < time.Millisecond*50 || time.Since(ts) < time.Millisecond*500 {
@@ -79,14 +81,21 @@ func main() {
 				sc := kbState.Emit(scancode, rn)
 				curr.HandleShortcut(sc)
 
-				if scancode == 14 {
-					go holdKey(scancode, bspaceLift)
+				if slices.Contains([]string{"BCKSP", "SHF BCKSP", "ENTER", "SHF ENTER"}, sc.String()) {
+					if _, ok := liftChans[scancode]; !ok {
+						liftChans[scancode] = make(chan interface{})
+						fmt.Println("made hold channel for ", scancode)
+					}
+					go holdKey(scancode, liftChans[scancode])
 				}
 			}
 		}
 	}
 
 	win.KeyChar = func(rn rune) {
+		if rn == '\n' {
+			return
+		}
 		ks := kb.Keystroke(rn)
 		curr.HandleKeystroke(ks)
 	}
@@ -101,8 +110,8 @@ func main() {
 		} else if scancode == 56 || scancode == 312 {
 			//ALT
 			kbState.Alt--
-		} else if scancode == 14 {
-			bspaceLift <- true
+		} else if scancode == 14 || scancode == 28 {
+			liftChans[scancode] <- 0
 		}
 
 		// cap counters at 0
