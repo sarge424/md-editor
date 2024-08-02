@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/sarge424/notes/colors"
 	"github.com/sarge424/notes/editor"
 	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas/glfwcanvas"
@@ -24,15 +25,19 @@ var (
 )
 
 func holdKey(code int, stop <-chan interface{}) {
-	time.Sleep(500 * time.Millisecond)
+	ts := time.Now()
+	t := time.Now()
 
 	for {
 		select {
 		case <-stop:
 			return
 		default:
+			if time.Since(t) < time.Millisecond*50 || time.Since(ts) < time.Millisecond*500 {
+				continue
+			}
 			curr.HandleShortcut(kbState.Emit(code, 0))
-			time.Sleep(50 * time.Millisecond)
+			t = time.Now()
 		}
 	}
 }
@@ -51,6 +56,7 @@ func main() {
 	if err != nil {
 		panic("Error loading font")
 	}
+	cv.SetFont(f, 24)
 
 	iconFile, _ := os.Open("icon.png")
 	defer iconFile.Close()
@@ -141,11 +147,9 @@ func main() {
 	win.MainLoop(func() {
 
 		w, h := cv.Size()
-		cv.SetFillStyle("#242424")
+		cv.SetFillStyle(colors.AppBG)
 		cv.FillRect(0, 0, float64(w), float64(h))
 
-		cv.SetFont(f, 24)
-		cv.SetFillStyle("#FFF")
 		ed.Render(cv)
 	})
 

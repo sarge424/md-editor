@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/sarge424/notes/colors"
 	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas"
 )
@@ -360,9 +361,9 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 	}
 	switch e.mode {
 	case NavMode:
-		cv.SetFillStyle("#ff4242")
+		cv.SetFillStyle(colors.NavPointer)
 	case EditMode:
-		cv.SetFillStyle("#4242ff")
+		cv.SetFillStyle(colors.EditPointer)
 	}
 
 	// xpos -> offset % max length for long rows
@@ -427,24 +428,20 @@ outer:
 
 	// the file ends in a newline
 	if rowNo < len(e.rows) && rowNo < e.scroll+e.Height {
-		cv.SetFillStyle("#888")
-		cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
-
-		cv.SetFillStyle("#FFF")
-		cv.FillText(rowBuffer, 0, float64(rowsDrawn-e.scroll+1)*24)
+		e.DrawLine(rowBuffer, rowNo, rowsDrawn, cv)
 	}
 }
 
 func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canvas) int {
-	//row numbers
-	cv.SetFillStyle("#888")
+	//row number
+	cv.SetFillStyle(colors.DarkText)
 	cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
 
-	//row content
+	//row style
 	if strings.HasPrefix(rowBuffer, "# ") {
-		cv.SetFillStyle("#F00")
+		cv.SetFillStyle(colors.H1)
 	} else {
-		cv.SetFillStyle("#FFF")
+		cv.SetFillStyle(colors.Text)
 	}
 
 	for len(rowBuffer) > e.rowLen {
@@ -461,11 +458,11 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 
 func (e Editor) DrawPanel(cv *canvas.Canvas) {
 	// panel
-	cv.SetFillStyle("#444")
+	cv.SetFillStyle(colors.EditorPanel)
 	cv.FillRect(12, 12, 80*14, 34*24)
 
 	// line no divider
-	cv.SetStrokeStyle("#888")
+	cv.SetStrokeStyle(colors.EditorHighlight)
 	cv.BeginPath()
 	cv.MoveTo(14*7, 24)
 	cv.LineTo(14*7, float64(24*(1+e.Height)))
