@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/sarge424/notes/colors"
+	"github.com/sarge424/notes/config"
 	"github.com/sarge424/notes/editor"
 	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas/glfwcanvas"
@@ -52,11 +52,7 @@ func main() {
 	}
 
 	//LOAD RESOURCES
-	f, err := cv.LoadFont(font)
-	if err != nil {
-		panic("Error loading font")
-	}
-	cv.SetFont(f, 24)
+	config.Initialize(cv, font)
 
 	iconFile, _ := os.Open("icon.png")
 	defer iconFile.Close()
@@ -147,7 +143,7 @@ func main() {
 	win.MainLoop(func() {
 
 		w, h := cv.Size()
-		cv.SetFillStyle(colors.AppBG)
+		cv.SetFillStyle(config.Color.AppBG)
 		cv.FillRect(0, 0, float64(w), float64(h))
 
 		ed.Render(cv)

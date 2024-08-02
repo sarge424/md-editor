@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sarge424/notes/colors"
+	"github.com/sarge424/notes/config"
 	"github.com/sarge424/notes/kb"
 	"github.com/tfriedel6/canvas"
 )
@@ -372,10 +372,10 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 	}
 	switch e.mode {
 	case NavMode:
-		cv.SetFillStyle(colors.NavPointer)
+		cv.SetFillStyle(config.Color.NavPointer)
 	case EditMode:
 		if time.Now().UnixMilli()%1000 > 500 {
-			cv.SetStrokeStyle(colors.EditPointer)
+			cv.SetStrokeStyle(config.Color.EditPointer)
 		} else {
 			cv.SetStrokeStyle("#0000")
 		}
@@ -459,21 +459,21 @@ outer:
 func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canvas) int {
 	//row number
 	if e.p.y == rowNo {
-		cv.SetFillStyle(colors.CurrentRowText)
+		cv.SetFillStyle(config.Color.CurrentRowText)
 	} else {
-		cv.SetFillStyle(colors.RowText)
+		cv.SetFillStyle(config.Color.RowText)
 	}
 	cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
 
 	//row style
 	if strings.HasPrefix(rowBuffer, "# ") {
-		cv.SetFillStyle(colors.H1)
+		cv.SetFillStyle(config.Color.H1)
 	} else if strings.HasPrefix(rowBuffer, "## ") {
-		cv.SetFillStyle(colors.H2)
+		cv.SetFillStyle(config.Color.H2)
 	} else if strings.HasPrefix(rowBuffer, "### ") {
-		cv.SetFillStyle(colors.H3)
+		cv.SetFillStyle(config.Color.H3)
 	} else {
-		cv.SetFillStyle(colors.Text)
+		cv.SetFillStyle(config.Color.Text)
 	}
 
 	for len(rowBuffer) > e.rowLen {
@@ -490,11 +490,11 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 
 func (e Editor) DrawPanel(cv *canvas.Canvas) {
 	// panel
-	cv.SetFillStyle(colors.EditorPanel)
+	cv.SetFillStyle(config.Color.EditorPanel)
 	cv.FillRect(12, 12, 80*14, 34*24)
 
 	// line no divider
-	cv.SetStrokeStyle(colors.EditorHighlight)
+	cv.SetStrokeStyle(config.Color.EditorHighlight)
 	cv.BeginPath()
 	cv.MoveTo(14*7, 24)
 	cv.LineTo(14*7, float64(24*(1+e.Height)))
