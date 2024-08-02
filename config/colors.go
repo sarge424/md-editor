@@ -29,7 +29,7 @@ var Color = colorConfig{
 	EditorPanel:     "#201433",
 
 	NavPointer:  "#a73169",
-	EditPointer: "#152d68",
+	EditPointer: "#355d68",
 
 	RowText:        "#355d68",
 	CurrentRowText: "#94c5ac",
