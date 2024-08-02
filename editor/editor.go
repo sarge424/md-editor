@@ -50,22 +50,31 @@ func NewEditor(width, height, chunkSize int) Editor {
 	}
 }
 
-func (e *Editor) MoveX(dx int) {
+func (e *Editor) MoveX(dx int) bool {
 	// move cursor horizontally (clamp to row length)
 	newX := clamp(e.p.x+dx, 0, e.rows[e.p.y].length)
 	if e.p.x != newX {
 		e.p.x = newX
 		e.p.oldx = newX
+		return true
 	}
+
+	return false
 }
 
-func (e *Editor) MoveY(dy int) {
+func (e *Editor) MoveY(dy int) bool {
 	//move the cursor vertically (clamp to no. of lines)
 	newY := clamp(e.p.y+dy, 0, len(e.rows)-1)
+	if newY == e.p.y {
+		return false
+	}
+
 	e.p.y = newY
 
 	// if the row is too short, change x
 	e.p.x = min(e.rows[e.p.y].length, e.p.oldx)
+
+	return true
 }
 
 func (e *Editor) HandleKeystroke(k kb.Keystroke) {
@@ -85,31 +94,46 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 			e.MoveY(-1)
 
 		case 'w':
-			// rem is all the text after pointer in the row
-			rem := e.text.Get(e.rows[e.p.y].index+e.p.x+1, e.rows[e.p.y].length-e.p.x)
-			if ix := strings.Index(rem, " "); ix >= 0 {
-				e.MoveX(ix + 1)
+			// if at last char, go to next row
+			if e.p.x == e.rows[e.p.y].length {
+				if e.MoveY(1) {
+					e.p.x = 0
+					e.p.oldx = 0
+				}
 			} else {
-				e.MoveX(e.rows[e.p.y].length)
-			}
-
-		case 'W':
-			// rem is all the text before pointer in the row
-			rem := e.text.Get(e.rows[e.p.y].index, e.p.x)
-
-			// find last space in rem
-			ix := -1
-			for i := len(rem) - 1; i >= 0; i-- {
-				if rem[i] == ' ' {
-					ix = i
-					break
+				// rem is all the text after pointer in the row
+				rem := e.text.Get(e.rows[e.p.y].index+e.p.x+1, e.rows[e.p.y].length-e.p.x)
+				if ix := strings.Index(rem, " "); ix >= 0 {
+					e.MoveX(ix + 1)
+				} else {
+					e.MoveX(e.rows[e.p.y].length)
 				}
 			}
 
-			if ix >= 0 {
-				e.MoveX(-(len(rem) - ix))
+		case 'W':
+			//if at first char, go to prev row
+			if e.p.x == 0 {
+				if e.MoveY(-1) {
+					e.MoveX(e.rows[e.p.y].length)
+				}
 			} else {
-				e.MoveX(-e.rows[e.p.y].length)
+				// rem is all the text before pointer in the row
+				rem := e.text.Get(e.rows[e.p.y].index, e.p.x)
+
+				// find last space in rem
+				ix := -1
+				for i := len(rem) - 1; i >= 0; i-- {
+					if rem[i] == ' ' {
+						ix = i
+						break
+					}
+				}
+
+				if ix >= 0 {
+					e.MoveX(-(len(rem) - ix))
+				} else {
+					e.MoveX(-e.rows[e.p.y].length)
+				}
 			}
 
 		case '[':
@@ -438,15 +462,6 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 	}
 	cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn+1+1)*24)
 
-	//row style (font)
-	if strings.HasPrefix(rowBuffer, "# ") {
-		config.SetFontSize(72)
-	} else if strings.HasPrefix(rowBuffer, "## ") {
-		config.SetFontSize(48)
-	} else {
-		config.SetFontSize(24)
-	}
-
 	//pointer
 	if rowNo == e.p.y {
 		e.DrawPointer(cv, rowsDrawn-rowNo)
@@ -464,7 +479,7 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 	}
 
 	rowHeight := config.FontSize / 24
-	rLen := e.rowLen / (config.FontSize / 24)
+	rLen := e.rowLen / rowHeight
 	for {
 		cv.FillText(rowBuffer[:min(rLen, len(rowBuffer))], 14*8, float64(rowsDrawn+rowHeight+1)*24)
 		rowsDrawn += rowHeight
@@ -481,7 +496,7 @@ func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canv
 func (e Editor) DrawPanel(cv *canvas.Canvas) {
 	// panel
 	cv.SetFillStyle(config.Color.EditorPanel)
-	cv.FillRect(12, 12, 80*14, 34*24)
+	cv.FillRect(12, 12, 58*14+4, 34*24)
 
 	// line no divider
 	cv.SetStrokeStyle(config.Color.EditorHighlight)
@@ -490,8 +505,8 @@ func (e Editor) DrawPanel(cv *canvas.Canvas) {
 	cv.LineTo(14*7, float64(24*(1+e.Height)))
 	cv.Stroke()
 	cv.BeginPath()
-	cv.MoveTo(14*8+14*50, 24)
-	cv.LineTo(14*8+14*50, float64(24*(1+e.Height)))
+	cv.MoveTo(14*60, 24)
+	cv.LineTo(14*60, float64(24*(1+e.Height)))
 	cv.Stroke()
 }
 

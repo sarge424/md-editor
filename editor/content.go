@@ -98,9 +98,11 @@ func (c content) Get(index, length int) string {
 			s += ch[max(0, index-chunkStart):min(index+length-chunkStart, len(ch))]
 		}
 
-		if index+length <= chunkStart {
+		if index+length <= chunkStart || len(s) >= length {
 			break
 		}
+
+		chunkStart += len(ch)
 	}
 
 	return s
