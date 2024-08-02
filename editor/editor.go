@@ -6,6 +6,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/sarge424/notes/colors"
 	"github.com/sarge424/notes/kb"
@@ -126,7 +127,7 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 
 		// scroll
 		case '[':
-			e.scroll = min(e.scroll+1, len(e.rows)-e.Height)
+			e.scroll = min(e.scroll+1, max(e.scroll, len(e.rows)-e.Height))
 		case ']':
 			e.scroll = max(e.scroll-1, 0)
 		}
@@ -160,6 +161,16 @@ func (e *Editor) HandleShortcut(k kb.Shortcut) {
 	case "CTL S":
 		e.SaveFile()
 		fmt.Println("File saved.")
+
+	// Cursor movement
+	case "328":
+		e.MoveY(-1)
+	case "336":
+		e.MoveY(1)
+	case "331":
+		e.MoveX(-1)
+	case "333":
+		e.MoveX(1)
 
 	default:
 		fmt.Println(k)
@@ -363,7 +374,12 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 	case NavMode:
 		cv.SetFillStyle(colors.NavPointer)
 	case EditMode:
-		cv.SetFillStyle(colors.EditPointer)
+		if time.Now().UnixMilli()%1000 > 500 {
+			cv.SetStrokeStyle(colors.EditPointer)
+		} else {
+			cv.SetStrokeStyle("#0000")
+		}
+		cv.SetLineWidth(2)
 	}
 
 	// xpos -> offset % max length for long rows
@@ -374,7 +390,15 @@ func (e Editor) DrawPointer(cv *canvas.Canvas, yloc int) {
 	xpos := e.p.x % e.rowLen
 	ypos := e.p.x/e.rowLen + yloc
 
-	cv.FillRect(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+1)*24, 14, 24)
+	switch e.mode {
+	case NavMode:
+		cv.FillRect(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+1)*24, 14, 24)
+	case EditMode:
+		cv.BeginPath()
+		cv.MoveTo(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+1)*24)
+		cv.LineTo(float64(xpos+8)*14, float64(e.p.y+ypos-e.scroll+2)*24)
+		cv.Stroke()
+	}
 }
 
 func (e Editor) Render(cv *canvas.Canvas) {
@@ -434,12 +458,20 @@ outer:
 
 func (e Editor) DrawLine(rowBuffer string, rowNo, rowsDrawn int, cv *canvas.Canvas) int {
 	//row number
-	cv.SetFillStyle(colors.DarkText)
+	if e.p.y == rowNo {
+		cv.SetFillStyle(colors.CurrentRowText)
+	} else {
+		cv.SetFillStyle(colors.RowText)
+	}
 	cv.FillText(fmt.Sprintf("%04d", rowNo+1), 14*2, float64(rowsDrawn-e.scroll+1+1)*24)
 
 	//row style
 	if strings.HasPrefix(rowBuffer, "# ") {
 		cv.SetFillStyle(colors.H1)
+	} else if strings.HasPrefix(rowBuffer, "## ") {
+		cv.SetFillStyle(colors.H2)
+	} else if strings.HasPrefix(rowBuffer, "### ") {
+		cv.SetFillStyle(colors.H3)
 	} else {
 		cv.SetFillStyle(colors.Text)
 	}

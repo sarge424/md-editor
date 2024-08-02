@@ -1,16 +1,19 @@
 package colors
 
 var (
-	AppBG = "#1f2335"
+	AppBG = "#201127"
 
-	EditorHighlight = "#292e42"
-	EditorPanel     = "#24283b"
+	EditorHighlight = "#1b1e34"
+	EditorPanel     = "#201433"
 
-	NavPointer  = "#ff4242"
-	EditPointer = "#4242ff"
+	NavPointer  = "#6aaf9d"
+	EditPointer = "#ffffff"
 
-	DarkText = "#3b4261"
-	Text     = "#a9b1d6"
+	RowText        = "#355d68"
+	CurrentRowText = "#94c5ac"
+	Text           = "#fff"
 
-	H1 = "#FF0"
+	H1 = "#c24b6e"
+	H2 = "#d9626b"
+	H3 = "#ec9a6d"
 )
