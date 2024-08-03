@@ -16,7 +16,7 @@ import (
 
 var (
 	font = "C:/windows/fonts/liberationmono-regular.ttf"
-	file = "C:/users/arjun/Desktop/vault/crypto.md"
+	file = "C:/users/arjun/Desktop/vault/test.md"
 
 	kbState       kb.State
 	curr          kb.Keyboarder

@@ -168,6 +168,9 @@ func (e *Editor) HandleShortcut(k kb.Shortcut) {
 			e.InsertText("\n")
 			return
 
+		case "TAB":
+			e.InsertText("    ")
+
 		}
 	}
 
