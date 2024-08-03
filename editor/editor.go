@@ -40,6 +40,8 @@ type Editor struct {
 
 	scroll int
 	Height int
+
+	command string
 }
 
 func NewEditor(width, height, chunkSize int) Editor {
@@ -78,22 +80,25 @@ func (e *Editor) MoveY(dy int) bool {
 }
 
 func (e *Editor) HandleKeystroke(k kb.Keystroke) {
+	//https://www.freecodecamp.org/news/vim-key-bindings-reference/
 	if e.mode == NavMode {
+		cmdExecuted := true
+		e.command += string(k)
 
 		// standardize letters to uppercase
-		switch k {
+		switch e.command {
 
 		// movement
-		case 'h', 'H':
+		case "h", "H":
 			e.MoveX(-1)
-		case 'l', 'L':
+		case "l", "L":
 			e.MoveX(1)
-		case 'j', 'J':
+		case "j", "J":
 			e.MoveY(1)
-		case 'k', 'K':
+		case "k", "K":
 			e.MoveY(-1)
 
-		case 'w':
+		case "w":
 			// if at last char, go to next row
 			if e.p.x == e.rows[e.p.y].length {
 				if e.MoveY(1) {
@@ -110,7 +115,7 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 				}
 			}
 
-		case 'W':
+		case "b":
 			//if at first char, go to prev row
 			if e.p.x == 0 {
 				if e.MoveY(-1) {
@@ -136,15 +141,23 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 				}
 			}
 
-		case '[':
+		case "[":
 			e.scroll = min(e.scroll+1, len(e.rows)-1)
-		case ']':
+		case "]":
 			e.scroll = max(e.scroll-1, 0)
 
 		// mode switch
-		case 'i', 'I':
+		case "i", "I":
 			e.mode = EditMode
 
+		default:
+			fmt.Println("cmd is", e.command)
+			cmdExecuted = false
+		}
+
+		// if a command was successfully executed
+		if cmdExecuted {
+			e.command = ""
 		}
 
 	} else if e.mode == EditMode {
@@ -153,7 +166,12 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 }
 
 func (e *Editor) HandleShortcut(k kb.Shortcut) {
-	if e.mode == EditMode {
+	if e.mode == NavMode {
+		switch fmt.Sprint(k) {
+		case "1":
+			e.command = ""
+		}
+	} else if e.mode == EditMode {
 		switch fmt.Sprint(k) { // switch on the string representation
 		//uses returns to avoid the all-modes switch
 		case "1": //ESC
@@ -189,9 +207,6 @@ func (e *Editor) HandleShortcut(k kb.Shortcut) {
 		e.MoveX(-1)
 	case "333":
 		e.MoveX(1)
-
-	default:
-		fmt.Println("Default shortcut:", k)
 	}
 }
 
