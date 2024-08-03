@@ -89,14 +89,27 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 		switch e.command {
 
 		// movement
-		case "h", "H":
+		case "h":
 			e.MoveX(-1)
-		case "l", "L":
+		case "l":
 			e.MoveX(1)
-		case "j", "J":
+		case "j":
 			e.MoveY(1)
-		case "k", "K":
+		case "k":
 			e.MoveY(-1)
+
+		case "gg":
+			e.MoveY(-e.p.y)
+			e.MoveX(-e.p.x)
+
+		case "G":
+			e.MoveY(len(e.rows) - e.p.y)
+			e.MoveX(-e.p.x)
+
+		case "$":
+			e.MoveX(-e.p.x)
+		case "0":
+			e.MoveX(e.rows[e.p.y].length - e.p.x)
 
 		case "w":
 			// if at last char, go to next row
@@ -147,11 +160,10 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 			e.scroll = max(e.scroll-1, 0)
 
 		// mode switch
-		case "i", "I":
+		case "i":
 			e.mode = EditMode
 
 		default:
-			fmt.Println("cmd is", e.command)
 			cmdExecuted = false
 		}
 
