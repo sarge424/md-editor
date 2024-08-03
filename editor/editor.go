@@ -154,6 +154,25 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 				}
 			}
 
+		case "x":
+			// if not on last char in the row
+			if e.MoveX(1) {
+				e.DeleteText(1)
+			} else {
+				// try to move down a row, and delete its \n
+				if e.MoveY(1) {
+					e.MoveX(-e.p.x)
+					e.DeleteText(1)
+				}
+			}
+
+		case "dd":
+			e.MoveX(e.rows[e.p.y].length)
+			for range e.rows[e.p.y].length {
+				e.DeleteText(1)
+			}
+
+		// scroll
 		case "[":
 			e.scroll = min(e.scroll+1, len(e.rows)-1)
 		case "]":
