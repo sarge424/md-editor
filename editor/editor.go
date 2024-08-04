@@ -167,10 +167,10 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 			}
 
 		case "dd":
-			e.MoveX(e.rows[e.p.y].length)
-			for range e.rows[e.p.y].length {
-				e.DeleteText(1)
-			}
+			e.MoveX(-e.p.x)
+			e.DeleteText(e.rows[e.p.y].length + 1)
+			e.MoveX(-e.p.x)
+			e.MoveY(1)
 
 		// scroll
 		case "[":
@@ -180,6 +180,11 @@ func (e *Editor) HandleKeystroke(k kb.Keystroke) {
 
 		// mode switch
 		case "i":
+			e.mode = EditMode
+
+		case "o":
+			e.MoveX(e.rows[e.p.y].length)
+			e.InsertText("\n")
 			e.mode = EditMode
 
 		default:
